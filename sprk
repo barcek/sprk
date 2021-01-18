@@ -1,0 +1,728 @@
+#!/usr/bin/python3
+
+import sys
+from pathlib import Path
+import shutil
+from itertools import count
+import os
+
+
+# base variables
+
+current_dir = Path.cwd()
+sprkfilename = "Sprkfile"
+
+path_to_self = Path(sys.argv[0]).resolve()
+path_to_sprkfile = current_dir / sprkfilename
+
+tools = []
+active_tool = None
+
+
+# template class (Template)
+
+class Template():
+
+    def __init__(self, pars):
+        self.name = self.tool.name_element("item") if "name" not in pars else pars["name"]
+        self.core = ["parts"] if "core" not in pars else pars["core"]
+        self.form = {
+            "parts": [] if "parts" not in pars else pars["parts"],
+            "calls": [] if "calls" not in pars else pars["calls"]
+        } if "form" not in pars else pars["form"]
+
+
+# resource classes (Resource, Process & Option)
+
+class Resource():
+
+    def __init__(self, pars):
+        self.tool = None if "tool" not in pars else pars["tool"]
+        self.info = None if "info" not in pars else pars["info"]
+
+
+class Process(Resource):
+
+    def __init__(self, pars):
+        super(Process, self).__init__(pars)
+        self.pool = None if "pool" not in pars else pars["pool"]
+        self.rank = 1 if "rank" not in pars else pars["rank"]
+        self.call = None if "call" not in pars else pars["call"]
+        self.items = [] if "items" not in pars else pars["items"]
+
+
+class Option(Process):
+
+    def __init__(self, pars):
+        super(Option, self).__init__(pars)
+        self.desc = "" if "desc" not in pars else pars["desc"]
+        self.word = "" if "word" not in pars else pars["word"]
+        self.char = "" if "char" not in pars else pars["char"]
+        self.args = [] if "args" not in pars else pars["args"]
+        self.info = (
+            lambda self, tab:\
+                f"{' -' + self.char if self.char else ' '}"\
+                f"{', ' if self.char and self.word else ''}"\
+                f"{'--' + self.word if self.word else ''}"\
+                f"{' ' + ' '.join(self.args if self.args else '')}"\
+                f"{tab + self.desc if self.desc else '{EMPTY}'}"\
+        )(self, "{ALIGN}")
+
+
+# tool classes (Builder, Composer, Runner & Sprker)
+
+class Builder():
+
+    def __init__(self, pars):
+        self.vars = {
+            "delims": {"opening": "{", "divider": ":", "closing": "}"},
+            "values": {"state": {"string": "STATE", "source": "state"}}
+        }
+        self.state = {
+            "name": "project" if "name" not in pars else pars["name"],
+            "root": current_dir if "root" not in pars else Path(pars["root"]),
+            "code": current_dir if "code" not in pars else Path(pars["code"]),
+            "main": None if "main" not in pars else Path(pars["main"]),
+            "nums": {}
+        }
+        self.batches = [] if "batches" not in pars else pars["batches"]
+
+    class Batch():
+
+        def __init__(self, pars):
+            self.dir = current_dir if "dir" not in pars else pars["dir"]
+            self.items = [] if "items" not in pars else pars["items"]
+
+    def update_state(self, new_state={}):
+        """Updates the state attribute with any new state."""
+        self.state = {**self.state, **new_state}
+
+    def name_element(self, type="item"):
+        """Returns a name using a type string and generated sequential number."""
+        if type not in self.state["nums"]:
+            self.state["nums"][type] = count(start=1, step=1)
+        return f'new_{type}_{next(self.state["nums"][type])}'
+
+    @staticmethod
+    def read_file(filename):
+        """Returns any content read from a file for a given filename."""
+        content = None
+        try:
+            with open(filename, 'r') as f:
+                content = f.read()
+        except Exception as err:
+            print(f"Error: content not read from file '{filename}'.")
+            print(err)
+        return content
+
+    def write_file(self, path=None, content="", flag="a"):
+        """Writes any content to a file, calling to create any filename needed."""
+        path = path or self.name_element("file")
+        try:
+            with open(path, flag) as f:
+                f.write(content)
+            print(f"{'Wrote' if flag == 'w' else 'Added'} {len(content)} characters to file {path}")
+        except Exception as err:
+            print(
+                f"Error: content may not have been written to file '{path}':"
+                f"\nContent:\n{content}"
+            )
+            print(err)
+
+    def build_identifier(self, key):
+        """Returns all or part of a string identifying a given variable."""
+        opening, divider, closing = self.vars["delims"].values()
+        string, source = self.vars["values"][key].values()
+        return opening + string + (divider if source is not None else closing)
+
+    def identify_variable(self, content, key):
+        """Returns details of any variable found by its identifier in content."""
+        ident = self.build_identifier(key)
+        start = content.find(ident)
+        if start == -1:
+            return
+        elif self.vars["values"][key]["source"] is None:
+            whole, extra = ident, None
+        else:
+            end = start + content[start:].find(self.vars["delims"]["closing"])
+            extra = content[start + len(ident):end]
+            whole = ident + extra + self.vars["delims"]["closing"]
+        return {
+            "whole": whole,
+            "extra": extra,
+            "source": self.vars["values"][key]["source"]
+        }
+
+    def replace_variables(self, content, name):
+        """Returns content with any variables present identified and replaced."""
+        new = "<!--SOURCE NOT FOUND-->"
+        for key in list(self.vars["values"].keys()):
+            while True:
+                var = self.identify_variable(content, key)
+                if var is None:
+                    break
+                whole, extra, source = var.values()
+                if extra and hasattr(self, source)\
+                    and extra in getattr(self, source):
+                    new = str(getattr(self, source)[extra])
+                elif extra:
+                    print(f"Error: data '{extra}' not found for file '{name}'"\
+                        f" - location in file marked '{new}'.")
+                content = content.replace(whole, new)
+        return content
+
+    @staticmethod
+    def indent_content(spaces=4, string=""):
+        """Returns a string with a number of spaces added after each newline."""
+        return string.replace("\n", "\n" + " " * spaces)
+
+    def insert_content(self, current, content, anchor={"index": -1},
+            delims={"opening": "", "closing": ""}, indent=0, **kargs):
+        """Returns content with additional lines combined, indented and inserted."""
+        content = self.indent_content(indent, delims["opening"] + content)
+        if "string" in anchor:
+            start, length = current.find(anchor["string"]), len(anchor["string"])
+            if start == -1:
+                return current
+        else:
+            start, length = anchor["index"], 0
+            if start >= len(current):
+                return current
+        return current[:start + length] + content + delims["closing"]\
+             + current[start + length + 1:]
+
+    def create_file(self, dir=current_dir, filename=None, content="",
+            input={"flag": "a"}):
+        """Creates a file if not present, then calls to modify and write any text."""
+        name = filename or self.name_element("file")
+        path, newline = dir / name, "\n"
+        if path not in dir.iterdir():
+            try:
+                path.touch()
+                print(f"Created file {path}")
+            except Exception as err:
+                print(
+                    f"Error: file '{name}' may not have been created"
+                    f"{' with content:' if content else '.'}"
+                    f"{newline if content else ''}{content if content else ''}"
+                )
+                print(err)
+                return False
+        if content:
+            if input["flag"] == "i":
+                current = self.read_file(filename)
+                current = self.insert_content(current, content, **input)
+                content = current
+                input["flag"] = "w"
+            content = self.replace_variables(content, name)
+            self.write_file(path, content, input["flag"])
+        return True
+
+    def create_folder(self, dir=current_dir, dirname=None, items=None):
+        """Creates a folder if not present, then calls to build any items."""
+        name = dirname or self.name_element("folder")
+        path = dir / name
+        try:
+            path.mkdir()
+            print(f"Created folder {path}/")
+        except FileExistsError:
+            print(f"Found existing folder {path}/")
+            pass
+        except Exception as err:
+            print(f"Error: folder '{name}' may not have been created.")
+            print(err)
+            return False
+        if items:
+            self.create_items(items, path)
+        return True
+
+    def create_items(self, items=[], dir=current_dir):
+        """Builds a file and folder structure, making any call first per item."""
+        for item in items:
+            if "call" in item:
+                item["call"](dir)
+            if "filename" in item:
+                self.create_file(
+                    dir, item["filename"],
+                    "" if "content" not in item else item["content"],
+                    {"flag": "a"} if "input" not in item else item["input"]
+                )
+            elif "dirname" in item:
+                self.create_folder(
+                    dir, item["dirname"],
+                    None if "items" not in item else item["items"] or None
+                )
+
+    def queue_items(self, dir=current_dir, items=[]):
+        """Combines and queues as a batch a directory and a set of items."""
+        self.batches.append(self.Batch({
+            "dir": dir,
+            "items": items
+        }))
+
+    def build_batches(self):
+        """Splits each batch in the batches attribute and calls to build."""
+        if self.batches:
+            print("Building batches...")
+        for batch in self.batches:
+            self.create_items(batch.items, batch.dir)
+
+
+class Composer(Builder):
+
+    def __init__(self, pars):
+        super(Composer, self).__init__(pars)
+        self.templates = {}
+        self.items = []
+
+    def insert_templates(self, templates):
+        """Adds self to each template, then adds each to the state attribute."""
+        for template in templates:
+            template.tool = self
+            self.templates.update({template.name: template})
+
+    def modify_template(self, name, content={}):
+        """Appends elements to a list or dict in a template form attribute."""
+        template = self.templates[name]
+        for key in content:
+            if key == "core":
+                template.core.extend(content[key])
+            elif key not in template.form:
+                template.form[key] = content[key]
+            elif key in template.form and isinstance(template.form[key], list):
+                template.form[key].extend(content[key])
+            elif key in template.form and isinstance(template.form[key], dict):
+                template.form[key].update(content[key])
+
+    @staticmethod
+    def dedupe_list(items):
+        """Returns a list with any duplicate items removed."""
+        return list(dict.fromkeys(items))
+
+    def queue_modified(self):
+        """Returns each template in which a key listed as core has 1+ entries."""
+        templates = []
+        for name in self.templates:
+            templates.extend([
+                self.templates[name] for item in self.templates[name].core
+                if self.templates[name].form[item]
+            ])
+        return self.dedupe_list(templates)
+
+    def compose_items(self):
+        """Prepares items based on templates, then for each makes any calls."""
+        self.items = self.queue_modified()
+        if self.items:
+            print("Composing items...")
+        for item in self.items:
+            for call in item.form["calls"]:
+                call(item)
+
+
+class Runner(Composer):
+
+    def __init__(self, pars):
+        super(Runner, self).__init__(pars)
+        self.vars["values"] = {**self.vars["values"], **{
+            "align": {"string": "ALIGN", "source": None},
+            "blank": {"string": "BLANK", "source": None},
+            "empty": {"string": "EMPTY", "source": None}
+        }}
+        self.state = {**self.state, **{
+            "caps": [
+                {"name": "show_help", "poss": 1, "used": 0}
+            ]
+        }}
+        self.resources = []
+        self.tasks = []
+        self.pools = {}
+        self.lead = [] if "lead" not in pars else pars["lead"]
+        self.work = {
+            "prep": [] if "prep" not in pars else pars["prep"],
+            "tidy": [] if "tidy" not in pars else pars["tidy"]
+        }
+
+    class Task():
+
+        def __init__(self, pars):
+            self.process = Option({}) if "process" not in pars else pars["process"]
+            self.args = [] if "args" not in pars else pars["args"]
+
+    def provide_resources(self, resources):
+        """Adds self to each resource instance, then each to the resources attribute."""
+        for resource in resources:
+            resource.tool = self
+            self.resources.append(resource)
+
+    @staticmethod
+    def getattrs(host, objects, key):
+        """Returns the value corresponding to a given key for each object in a list."""
+        return [getattr(object, key) for object in getattr(host, objects)\
+            if len(getattr(host, objects)) > 1 and getattr(object, key) is not None]
+
+    @staticmethod
+    def show_help(self, pars=[]):
+        """Builds a help page usiing any resource instance info attributes."""
+        infos = self.tool.getattrs(self.tool, "resources", "info")
+        align_id, blank_id, empty_id = [self.tool.build_identifier(key)
+            for key in ["align", "blank", "empty"]]
+        lengths = [len(info[:info.find(align_id)]) for info in infos
+            if info is not None and info.find(align_id) != -1]
+        max_length, spaces, i = max(lengths), 1, 0
+        for info in infos:
+            if info.find(align_id) != -1:
+                print(info.replace(align_id, " " * (max_length - lengths[i] + spaces)))
+                i += 1
+            elif info.find(blank_id) != -1:
+                print()
+            elif info.find(empty_id) != -1:
+                pass
+            elif info is not None:
+                print(info)
+
+    def set_call_cap(self, call, poss=1):
+        """Sets in state a maximum number of uses for a resource instance call."""
+        caps = self.state["caps"]
+        caps.append({
+            "name": call.__name__, "poss": poss, "used": 0
+        })
+        self.update_state({"caps": caps})
+
+    def request_call(self, call):
+        """Returns true if a function can be called, adding a use if capped."""
+        for entry in self.state["caps"]:
+            if entry["name"] == call and entry["used"] < entry["poss"]:
+                entry["used"] += 1
+            elif entry["name"] == call and entry["used"] >= entry["poss"]:
+                return False
+        return True
+
+    def match_flag(self, flag):
+        """Returns the option instance matching a flag, else a new to show help."""
+        for resource in self.resources:
+            if (hasattr(resource, "word") and flag == resource.word)\
+                or (hasattr(resource, "char") and flag == resource.char):
+                if (resource.call is not None and self.request_call(resource.call.__name__))\
+                    or resource.items:
+                    return resource
+                else:
+                    return Option({ "tool": self, "call": lambda self, pars: {} })
+        else:
+            print(f"Note: '{'--' if len(flag) > 1 else '-'}{flag}' is not a flag.")
+            return Option({
+                "tool": self,
+                "call": self.show_help if self.request_call("show_help")\
+                    else lambda self, pars: {}
+            })
+
+    def record_pooled(self, options):
+        """Records pools to which option instances belong, each with an instance count."""
+        for option in options:
+            if hasattr(option.process, "pool") and option.process.pool in self.pools:
+                self.pools[option.process.pool] += 1
+            elif hasattr(option.process, "pool"):
+                self.pools[option.process.pool] = 1
+
+    def queue_options(self, strings):
+        """Returns a task instance per flag with any arguments, then calls to record pools."""
+        options = []
+        for string in strings:
+            if string[0] ==  "-" and string[1] != "-":
+                for char in string[1:]:
+                    options.append(self.Task({
+                        "process": self.match_flag(char),
+                        "args": []
+                    }))
+            elif string[0] == "-" and string[1] == "-":
+                options.append(self.Task({
+                    "process": self.match_flag(string[2:]),
+                    "args": []
+                }))
+            elif options:
+                options[-1].args.append(string)
+        self.record_pooled(options)
+        return options
+
+    def queue_processes(self):
+        """Returns a task for each process unpooled or pooled with 1+ options."""
+        return [
+            self.Task({"process": resource}) for resource in self.resources
+            if isinstance(resource, Process) and not isinstance(resource, Option)
+                and (not hasattr(resource, "pool") or (hasattr(resource, "pool")
+                and resource.pool in self.pools and self.pools[resource.pool] > 0))
+        ]
+
+    def order_pools(self, tasks):
+        """Returns all tasks with lead pools prioritised in lead attribute order."""
+        for entry in self.lead[::-1]:
+            for task in tasks:
+                if hasattr(task.process, "pool") and task.process.pool == entry:
+                    tasks.remove(task)
+                    tasks.insert(0, task)
+        return tasks
+
+    def order_tasks(self, tasks):
+        """Returns all tasks with the tasks in each pool in ascending rank order."""
+        for pool in self.pools:
+            i = 0
+            indices = [tasks.index(task) for task in tasks if task.process.pool == pool]
+            pooled_tasks = list(filter(lambda task: task.process.pool == pool, tasks))
+            pooled_tasks.sort(key=lambda task: task.process.rank)
+            for index in indices:
+                tasks.pop(index)
+                tasks.insert(index, pooled_tasks[i])
+                i += 1
+        return tasks
+
+    def do_work(self, type):
+        """Calls each function listed for the given type in the work attribute."""
+        if self.work[type]:
+            for call in self.work[type]:
+                call()
+
+    def run_tasks(self, pars):
+        """Prepares tasks, then for each makes any call, else queues any items."""
+        unordered_tasks = self.queue_options(pars) + self.queue_processes()
+        self.tasks = self.order_tasks(self.order_pools(unordered_tasks))
+        if self.tasks:
+            print("Running tasks...")
+        for task in self.tasks:
+            if task.process.call is not None:
+                new_state = task.process.call(task.process, task.args) or {}
+            elif task.process.items:
+                new_state = self.queue_items(self.state["root"],
+                    task.process.items) or {}
+            if "new_state" in dir() and new_state.keys():
+                self.update_state(new_state)
+
+    def use(self, pars):
+        """Calls to perform any prep, then each major stage, then any tidying."""
+        self.do_work("prep")
+        self.run_tasks(pars)
+        self.compose_items()
+        self.build_batches()
+        self.do_work("tidy")
+
+
+class Sprker(Runner):
+
+    def __init__(self, pars):
+        super(Sprker, self).__init__(pars)
+
+    @staticmethod
+    def update(self, pars=[]):
+        """Attempts to copy a sprkfile over the sprk source file."""
+        src = path_to_sprkfile
+        if pars and os.path.isfile(pars[0])\
+            and os.path.basename(pars[0]) == sprkfilename:
+            src = pars[0]
+        elif pars and os.path.isdir(pars[0])\
+            and sprkfilename in os.listdir(pars[0]):
+            src = Path(pars[0]) / sprkfilename
+        elif pars:
+            print(f"Note: '{sprkfilename}' not found at {pars[0]}.")
+            return {}
+        try:
+            shutil.copy(src, path_to_self)
+            print("Updated sprk.")
+        except Exception as err:
+            print(f"May not have updated sprk.")
+            print(err)
+
+    @staticmethod
+    def backup(self, pars=[]):
+        """Attempts to copy the sprk source file to another location."""
+        dest = path_to_sprkfile
+        if pars and os.path.basename(pars[0]) == sprkfilename:
+            dest = pars[0]
+        elif pars and os.path.isdir(pars[0]):
+            dest = Path(pars[0]) / sprkfilename
+        elif pars:
+            print(f"{sprkfilename} not copied: {pars[0]} not a valid argument for DIR.")
+            return {}
+        try:
+            shutil.copy(path_to_self, dest)
+            print(f"Copied sprk to {dest}")
+        except Exception as err:
+            print(f"May not have copied sprk to {dest}")
+            print(err)
+
+
+# template functions, receiving template instance as 'self'
+
+def create_ignores(self):
+    """Prepares each file in the ignores template and calls to queue all as a batch."""
+    items = []
+    for file in self.form["files"]:
+        entries = []
+        for type in list(filter(
+            lambda key: key != "files" and key != "calls",
+            self.form.keys()
+        )):
+            if type in file["list"]:
+                entries.extend(self.form[type])
+        items.append({
+            "filename": file["name"],
+            "content": "\n".join(self.tool.dedupe_list(entries))
+        })
+    self.tool.queue_items(self.tool.state["root"], items)
+
+
+# resource functions,
+# receiving resource instance as 'self' & any arguments as 'pars',
+# optionally returning a dictionary with any state changes
+
+def start_project(self, pars=[]):
+    """Attempts to create a project folder and updates name and paths in state."""
+    name = pars[0] if pars else self.tool.state["name"]
+    path = current_dir / name
+    if path in current_dir.iterdir():
+        response = input(
+            f"Folder '{name}' already exists. By continuing, files in the "
+            f"existing '{name}' may be overwritten or otherwise modified.\n"
+            "Continue? (enter 'y'/'Y' to continue; anything else to stop) "
+        )
+        if response not in ["y", "Y"]:
+            sys.exit()
+    root = code = path
+    self.tool.create_folder(dirname=name)
+    if self.tool.state["code"] != self.tool.state["root"]:
+        code = self.tool.state["code"]
+    return {"name": name, "root": root, "code": code}
+
+def initialize_git(self, pars=[]):
+    """Attempts to initialize a Git repo and updates the ignores template."""
+    try:
+        os.system(f'cd {self.tool.state["root"]}; git init; cd ..')
+    except Exception as err:
+        print("Git repository may not have been initialized.")
+        print(err)
+    self.tool.modify_template("ignores", {
+        "nonr": [".git", ".gitignore"],
+        "files": [
+            {"name": ".gitignore", "list": ["rein", "sens"]}
+        ]
+    })
+
+
+# resource variables,
+# e.g. strings & lists of dictionaries for resource 'items' attribute
+
+root_items = {
+
+    "readme": [
+        {
+            "filename": "README.md",
+            "content": "# {STATE:name}"
+        }
+    ]
+}
+
+
+# tool_1 tool class instantiation, passing configuration dictionary
+
+tool_1 = Sprker({
+    "prep": [lambda: print("Starting...")],
+    "lead": ["project"],  # order of priority for any pools
+    "tidy": [lambda: print("Finished.")]
+})
+
+
+# tool_1 extension, passing template & resource class instantiations
+
+tool_1.insert_templates([
+
+    Template({
+        "name": "ignores",
+        "core": ["files"],
+        "form": {
+            "rein": [],  # item type, reinstalled (str)
+            "nonr": [],  # item type, non-runtime (str)
+            "sens": [],  # item type, sensitive (str)
+            "files": [],  # {"name": filename, "list": [type]}
+            "calls": [create_ignores]
+        }
+    })
+])
+
+tool_1.provide_resources([
+
+    Resource({"info": "{BLANK}"}),
+    Resource({"info": "Usage: sprk [--option/-o [ARG ...] ...]"}),
+    Resource({"info": "{BLANK}"}),
+
+    Option({
+        "pool": "project",
+        "rank": 1,
+        "desc": "create a project folder here, with NAME if given",
+        "word": "folder",
+        "char": "f",
+        "call": start_project,
+        "args": ["[NAME]"]
+    }),
+
+    Resource({"info": "{BLANK}"}),
+    Resource({"info": "... and inside, or here if no such folder requested, do the following:"}),
+    Resource({"info": "{BLANK}"}),
+
+    Option({
+        "pool": "project",
+        "rank": 2,
+        "desc": "initialize a Git repo & create a .gitignore file",
+        "word": "git",
+        "char": "g",
+        "call": initialize_git
+    }),
+    Option({
+        "desc": "create a README.md file",
+        "word": "readme",
+        "char": "r",
+        "items": root_items["readme"]
+    }),
+
+    Resource({"info": "{BLANK}"}),
+    Resource({"info": "... and/or do the following:"}),
+    Resource({"info": "{BLANK}"}),
+
+    Option({
+        "desc": f"save sprk as/over a {sprkfilename} here or in given DIR",
+        "word": "backup",
+        "char": "B",
+        "call": Sprker.backup,
+        "args": ["[DIR]"]
+    }),
+    Option({
+        "desc": f"replace sprk from a {sprkfilename} here or in given DIR",
+        "word": "update",
+        "char": "U",
+        "call": Sprker.update,
+        "args": ["[DIR]"]
+    }),
+
+    Resource({"info": "{BLANK}"}),
+
+    Option({
+        "desc": "show the help page",
+        "word": "help",
+        "char": "h",
+        "call": Runner.show_help
+    }),
+
+    Resource({"info": "{BLANK}"})
+])
+
+
+# tool_1 assignment to tools & active_tool variables
+
+tools.append(tool_1)
+active_tool = tool_1
+
+
+# use of active_tool, passing any relevant arguments
+
+if len(sys.argv) > 1:
+    active_tool.use(sys.argv)
+elif "show_help" in dir(Runner):
+    Runner.show_help(Resource({
+        "tool": active_tool
+    }), None)
