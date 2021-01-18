@@ -2,21 +2,21 @@
 
 Sprk is a command line tool and tool template. It's a little like the argparse module. Partially reinventing the wheel was part of the point. It's intended as a versatile toolkit to be customized by the user from any directory as circumstances and needs change. It does everything by default with only a single source file.
 
-[Getting started](#getting-started)
- - [The basic tool](#sample-sources)
- - [Multiple tools](#multiple-tools)
-[Creating a tool](#creating-a-tool)
- - [Runner & Sprker (tool classes)]()
- - [Task (tool internal class)](#task-tool-internal-class)
-[Providing resources](#providing-resources)
- - [Resource, Process & Option (resource classes)](#resource-process-option-resource-classes)
- - [Pools & ranks](#pools-ranks)
- - [Calls & items](#calls-items)
- - [Host tool use](#host-tool-use)
-[Inserting templates](#inserting-templates)
- - [Template (template class)](#template-template-class)
-[Runtime overview](#runtime-overview)
-[Development plan](#development-plan)
+- [Getting started](#getting-started)
+    - [The basic tool](#the-basic-tool)
+    - [Multiple tools](#multiple-tools)
+- [Creating a tool](#creating-a-tool)
+    - [Runner & Sprker (tool classes)](#runner--sprker-tool-classes)
+    - [Task (tool internal class)](#task-tool-internal-class)
+- [Providing resources](#providing-resources)
+    - [Resource, Process & Option (resource classes)](#resource-process--option-resource-classes)
+    - [Pools & ranks](#pools--ranks)
+    - [Calls & items](#calls--items)
+    - [Host tool use](#host-tool-use)
+- [Inserting templates](#inserting-templates)
+   - [Template (template class)](#template-template-class)
+- [Runtime overview](#runtime-overview)
+- [Development plan](#development-plan)
 
 ## Getting started
 
@@ -34,7 +34,7 @@ sprk -h
 
 On the help page you'll see that the command `sprk -B` or `sprk --backup` calls a copy of source code to the current directory, as a so-called sprkfile, with the default name 'Sprkfile'. Changes can be made to the Python code in this sprkfile and the changed file copied over the existing sprk source file with the command `sprk -U` or `sprk --update`.
 
-### A simple tool
+### The basic tool
 
 The source code in this repository provides a simple general command line tool as well as underlying logic for tools of far greater scope and complexity. It offers an example for reference and a starting point for other uses.
 
@@ -63,7 +63,7 @@ tool_1 = Sprker({
 The values in this case are:
 
 - one lambda to be run before the standard tasks (`prep`) and one after every other stage (`tidy`);
-- the name of the 'project' pool as a `lead` pool, which are given priority over other pools, meaning its tasks will be run before tasks in any pools listed later or not listed (see [Pools & ranks](#pools-ranks)) below.
+- the name of the 'project' pool as a `lead` pool, which are given priority over other pools, meaning its tasks will be run before tasks in any pools listed later or not listed (see [Pools & ranks](#pools--ranks)) below.
 
 Other possible keys are `name` for the project name string value, `root`, `code` and `main` for path string values (passed on assignment to `pathlib.Path`) and `batches` for instances of the tool internal Batch class containing items to be built (see [Runtime overview](#runtime-overview) below).
 
@@ -93,9 +93,9 @@ The `Sprker` is a descendant of the `Runner` providing two additional methods, o
 
 A tool will usually instantiate the `Runner`'s `Task` class once for each flag in the `sprk` command, using the `Option` instance corresponding to the flag and any arguments passed to that flag.
 
-It will also instantiate a task for certain instances of the `Process` resource (see [Resource, Process & Option](#resource-process-option-resource-classes) below).
+It will also instantiate a task for certain instances of the `Process` resource (see [Resource, Process & Option](#resource-process--option-resource-classes) below).
 
-Once created, tasks are run in the order in which the flags appear in the `sprk` command, subject to the effects of any `pool` and `rank` value (see [Pools & ranks](#pools-ranks) below).
+Once created, tasks are run in the order in which the flags appear in the `sprk` command, subject to the effects of any `pool` and `rank` value (see [Pools & ranks](#pools--ranks) below).
 
 ## Providing resources
 
@@ -119,7 +119,7 @@ The `Resource` class has an `info` attribute which takes a string value used on 
 
 The `Process` class is a descendant of the `Resource`, also accepting an `info` value.
 
-If the `info` value is not provided, a task is instantiated for this resource every time at least one `Option` instance with the same `pool` string value is used, in an order determined by the respective `rank` integer values (see [Pools & ranks](#pools-ranks) below). This may be useful for auxilliary actions or actions always required for a given pool.
+If the `info` value is not provided, a task is instantiated for this resource every time at least one `Option` instance with the same `pool` string value is used, in an order determined by the respective `rank` integer values (see [Pools & ranks](#pools--ranks) below). This may be useful for auxilliary actions or actions always required for a given pool.
 
 This class also has a `call` attribute - for a function to be run by the given task - and an `items` attribute - for a list of dictionaries defining folders and files to be built by the task (see [Runtime overview](#runtime-overview) below). One of the two values is used by default when the task is run.
 
@@ -129,7 +129,7 @@ The `Option` class is a descendant of the `Process`, also accepting the `pool`, 
 
 The `char` value is a corresponding single-character flag (e.g. 'a'), the `word` value a multi-character flag (e.g. 'add'), the `args` value any arguments the flag expects, and the `desc` value a description of the task. The four are combined automatically into an `info` value.
 
-### Sample resource
+#### Sample resource
 
 Below is an example of an `Option` instantiation to enable creation of a project folder, as in the source file in this repository.
 
@@ -147,8 +147,8 @@ Option({
 
 The values in this case are:
 
-- a `pool` value of 'project' which ensures that the task is run with other tasks having this value (see [next section](#pools-ranks));
-- a `rank` value of 1, ensuring that the task is run before any 'project' pool tasks with a higher integer value (see [next section](#pools-ranks));
+- a `pool` value of 'project' which ensures that the task is run with other tasks having this value (see [next section](#pools--ranks));
+- a `rank` value of 1, ensuring that the task is run before any 'project' pool tasks with a higher integer value (see [next section](#pools--ranks));
 - `char`, `word`, `args` and `desc` values giving an `info` value approximating '-f, --folder [NAME]  create a new folder here', meaning the task will be run if the '-f' or '--folder' flag is used;
 - a function to be called by the task (`call`).
 
@@ -205,17 +205,17 @@ Below is an example of an `items` dictionary for a simple tree with a use of ins
 
 ```python
 {
-    "dirname": "folder_1",
+    "dirname": "folder1",
     "items": [
         {
-            "dirname": "folder_2"
+            "dirname": "folder2"
         },
         {
-            "filename": "file_1",
+            "filename": "file1",
             "content": "This is appended content."
         },
         {
-            "filename": "file_2",
+            "filename": "file2",
             "content": "this is inserted content",
             "input": {
                 "flag": "i",
@@ -233,13 +233,13 @@ Below is an example of an `items` dictionary for a simple tree with a use of ins
 }
 ```
 
-This creates a directory named 'folder\_1' containing an empty sub-directory named 'folder\_2', a file named 'file\_1' with its content appended and a file named 'file\_2' with its content inserted. The inserted content is indented by two spaces and positioned following the string 'Insert here:', preceded by a newline and a hyphen and followed by a semi-colon. 
+This creates a directory named 'folder1' containing an empty sub-directory named 'folder2', a file named 'file1' with its content appended and a file named 'file2' with its content inserted. The inserted content is indented by two spaces and positioned following the string 'Insert here:', preceded by a newline and a hyphen and followed by a semi-colon. 
 
 ### Host tool use
 
 A tool's `provide_resources` method assigns the tool instance itself to each resource's `tool` attribute. This gives the resource instance access to the tool's attributes and methods.
 
-In addition, when a task is run the resource instance passes itself to any `call` value (see [Calls & items](#calls-items) above), making the tool accessible also to that function.
+In addition, when a task is run the resource instance passes itself to any `call` value (see [Calls & items](#calls--items) above), making the tool accessible also to that function.
 
 Most notably, the tool has a `state` attribute which takes a dictionary. This can be supplemented or updated in the form of a dictionary returned by any resource instance's `call` function, allowing values to be stored and used in later tasks.
 
@@ -285,7 +285,7 @@ In this case, there are four lists for values provided by tasks at Sprk runtime,
 - `nonr` for non-runtime items;
 - `sens` for sensitive items.
 
-The fourth list, `files`, is for the names of the files to be created. Its key is listed in `core`, meaning that if any filenames are added to the `files` list at runtime, `create\_ignores` will be called at the composition stage along with any other functions added to `calls`.
+The fourth list, `files`, is for the names of the files to be created. Its key is listed in `core`, meaning that if any filenames are added to the `files` list at runtime, `create_ignores` will be called at the composition stage along with any other functions added to `calls`.
 
 This is a fairly complex example. Take a look at the option instance functions in the source file to see how the tool's `modify_template` method is used to append new values dynamically and how the `create_ignores` function composes the content and queues it for creation at the build stage.
 
@@ -293,11 +293,11 @@ This is a fairly complex example. Take a look at the option instance functions i
 
 1. All tools are instantiated, receive any instances of a resource or template class and are added to the `tools` list, with one assigned to the `active_tool` variable.
 2. Any relevant command line arguments are passed to the active tool's `use` method, otherwise the `show_help` method is called.
-3. The tool's `do\_work` method calls any `prep` functions.
-4. At the task execution stage, via the `run\_tasks` method, the tool: matches each flag to an option instance, subject to the availability of any `call` function present; queues each option instance and any relevant process instances in instances of the tool internal Task class, each option instance with any relevant arguments; reorders these task instances to prioritize lead pools in lead attribute order and resource instances within pools by rank; for each task instance calls any `call` function present, or otherwise queues in an instance of the tool internal Batch class any `items` list present, to be built at the build stage.
-5. At the composition stage, via the `compose\_items` method, the tool: queues any template instance where any list referenced by key in its `core` attribute contains one or more items; for each such template calls each function listed in `calls`. 
+3. The tool's `do_work` method calls any `prep` functions.
+4. At the task execution stage, via the `run_tasks` method, the tool: matches each flag to an option instance, subject to the availability of any `call` function present; queues each option instance and any relevant process instances in instances of the tool internal Task class, each option instance with any relevant arguments; reorders these task instances to prioritize lead pools in lead attribute order and resource instances within pools by rank; for each task instance calls any `call` function present, or otherwise queues in an instance of the tool internal Batch class any `items` list present, to be built at the build stage.
+5. At the composition stage, via the `compose_items` method, the tool: queues any template instance where any list referenced by key in its `core` attribute contains one or more items; for each such template calls each function listed in `calls`. 
 6. At the build stage, via the `build_batches` method, the tool: for each batch instance and for each dictionary listed in `items` calls any `call` function present; creates any file or folder, descending through any nested items, and generates any names required; in the case of file content, prepares any insertion and replaces identifiers for any variables defined in the tool's `vars` attribute.
-7. The tool's `do\_work` method calls any `tidy` functions.
+7. The tool's `do_work` method calls any `tidy` functions.
 
 ## Development plan
 
