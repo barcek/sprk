@@ -1,8 +1,6 @@
 # sprk
 
-Sprk is a customizable command line tool. It's similar in concept to the `argparse` module in the Python standard library and partially reinventing the wheel is a guiding principle. Emphasis is placed on a fullness of access, flexibility and fluid extension.
-
-It's intended as a versatile toolkit to be adapted by the user to any degree from any directory as circumstances and needs change. It does everything by default with only a single source file.
+Sprk is a customizable command line tool similar in concept to the `argparse` module in the Python standard library. It's intended as a versatile template to be extended and adapted by the user from any directory and to any degree as circumstances and needs change. It does everything by default with a single source file.
 
 
 - [Getting started](#getting-started)
