@@ -1,6 +1,6 @@
 # sprk
 
-Sprk is a customizable command line tool similar in concept to the `argparse` module in the Python standard library. It's intended as a versatile template to be extended and adapted by the user from any directory and to any degree as circumstances and needs change. It does everything by default with a single source file.
+Sprk is a customizable command line tool core, similar in concept to the `argparse` module in the Python standard library. It's intended as a versatile template to be extended and adapted by the user from any directory and to any degree as circumstances and needs change. It does everything by default with a single source file.
 
 
 - [Getting started](#getting-started)
@@ -21,7 +21,7 @@ Sprk is a customizable command line tool similar in concept to the `argparse` mo
 
 ## Getting started
 
-Sprk is written in Python 3.8.5. On a Linux system with a compatible version of Python installed you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.0.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -33,7 +33,7 @@ The command `sprk`, `sprk -h` or `sprk --help` will show a help page.
 sprk -h
 ```
 
-On the help page you'll see that the command `sprk -B` or `sprk --backup` calls a copy of source code to the current directory, as a so-called sprkfile, with the default name 'Sprkfile'. Changes can be made to the Python code in this sprkfile and the changed file copied over the existing sprk source file with the command `sprk -U` or `sprk --update`.
+On the help page you'll see that the command `sprk -B` or `sprk --backup` calls a copy of source code to the current directory, as a so-called sprkfile, with the default name 'Sprkfile'. Changes can be made to the code and the changed file copied over the existing sprk source file with the command `sprk -U` or `sprk --update`.
 
 ### The basic tool
 
@@ -43,9 +43,9 @@ It may be best to take a look at the source file and experiment with the options
 
 ### Multiple tools
 
-If you'd like to use more than one version of the source file and avoid its sprkfile being overwritten in error, you can change the value of its `sprkfilename` variable.
+If you'd like to use more than one version of the source file and avoid a new version's sprkfile being overwritten in error, you can change the value of its `sprkfilename` variable.
 
-It might be more in the 'sprkic' spirit, however, to instantiate an additional tool in the sole source file and append this new tool to the `tools` list. Each tool could then have an option that allows the list to be displayed, the `active_tool` variable changed and the alternative used.
+It might be more 'sprkic', however, to instantiate an additional tool in the sole source file and append this new tool to the `tools` list. Each tool could then have an option that allows the `tools` list to be displayed, the `active_tool` variable changed and the alternative tool used.
 
 ## Creating a tool
 
@@ -64,9 +64,9 @@ tool_1 = Sprker({
 The values in this case are:
 
 - one lambda to be run before the standard tasks (`prep`) and one after every other stage (`tidy`);
-- the name of the 'project' pool as a `lead` pool, which are given priority over other pools, meaning its tasks will be run before tasks in any pools listed later or not listed (see [Pools & ranks](#pools--ranks)) below.
+- the name of the 'project' pool as a `lead` pool, those which are given priority over other pools, meaning its tasks will be run before tasks in any pools listed later or not listed (see [Pools & ranks](#pools--ranks)) below.
 
-Other possible keys are `name` for the project name string value, `root`, `code` and `main` for path string values (passed on assignment to `pathlib.Path`) and `batches` for instances of the tool internal Batch class containing items to be built (see [Runtime overview](#runtime-overview) below).
+Other possible keys are `name` for the project name string value, `root`, `code` and `main` for path string values (passed when assigned to `pathlib.Path`) and `batches` for instances of the tool internal Batch class containing items to be built (see [Runtime overview](#runtime-overview) below).
 
 A tool can also be extended by providing resources and inserting templates (see [Providing resources](#providing-resources) and [Inserting templates](#inserting-templates) below).
 
