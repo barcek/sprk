@@ -1,7 +1,6 @@
 # sprk
 
-Sprk is a customizable command line tool core, similar in concept to the `argparse` module in the Python standard library. It's intended as a versatile template to be extended and adapted by the user from any directory and to any degree as circumstances and needs change. It does everything by default with a single source file.
-
+Sprk is a versatile command line tool, similar in concept to the `argparse` module in the Python standard library. It's intended as a template to be extended and adapted by the user from any directory and to any degree as circumstances and needs change. It does everything by default with a single source file.
 
 - [Getting started](#getting-started)
     - [The basic tool](#the-basic-tool)
@@ -21,7 +20,7 @@ Sprk is a customizable command line tool core, similar in concept to the `argpar
 
 ## Getting started
 
-Sprk 1.0.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.1.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -45,13 +44,13 @@ It may be best to take a look at the source file and experiment with the options
 
 If you'd like to use more than one version of the source file and avoid a new version's sprkfile being overwritten in error, you can change the value of its `sprkfilename` variable.
 
-It might be more 'sprkic', however, to instantiate an additional tool in the sole source file and append this new tool to the `tools` list. Each tool could then have an option that allows the `tools` list to be displayed, the `active_tool` variable changed and the alternative tool used.
+It might be more 'sprkic', however, to instantiate an additional tool in the sole source file and add this new tool to the `tools` dictionary. Each tool could then have an option that allows the `tools` dictionary to be displayed, the `active_tool` variable changed and the alternative tool used.
 
 ## Creating a tool
 
 A tool can be created by creating an instance of either the `Runner` class or the `Sprker` class.
 
-A configuration dictionary containing certain initial values can be passed when instantiating a tool, as in the source file in this repository.
+A configuration dictionary containing certain initial values can be passed when instantiating a tool, as below:
 
 ```python
 tool_1 = Sprker({
@@ -70,7 +69,9 @@ Other possible keys are `name` for the project name string value, `root`, `code`
 
 A tool can also be extended by providing resources and inserting templates (see [Providing resources](#providing-resources) and [Inserting templates](#inserting-templates) below).
 
-A new tool should be appended to the `tools` list and one of the tools in this list should be assigned to the `active_tool` variable.
+Each new tool should be added to the `tools` dictionary and one of the tools in this dictionary should be assigned to the `active_tool` variable.
+
+In the current source file, the sole tool is added to the dictionary immediately.
 
 ### Runner & Sprker (tool classes)
 
@@ -105,7 +106,7 @@ A resource is an instance of the `Resource` class or one of its descendant `Proc
 One or more resources can be provided using the `provide_resources` method:
 
 ```python
-tool_1.provide_resources([resource_1, ...])
+tools["tool_1"].provide_resources([resource_1, ...])
 ```
 
 The order in which the resources are passed is the order in which their info values appear on the help page.
@@ -114,7 +115,9 @@ The order in which the resources are passed is the order in which their info val
 
 #### Resource (resource class)
 
-The `Resource` class has an `info` attribute which takes a string value used on the help page. The variable `{BLANK}` can be passed to create an empty line.
+The `Resource` class has an `info` attribute which takes a string value used on the help page.
+
+The variable `{BLANK}` can be passed to create an empty line, and `BLANK_LINE` contains a resource instance for this purpose. Also available are `USAGE_LINE`, for the standard usage guide, and `USING_LINE`, for an instance which includes the `{USING}` variable, to show the current tool.
 
 #### Process (resource class)
 
@@ -152,6 +155,12 @@ The values in this case are:
 - a `rank` value of 1, ensuring that the task is run before any 'project' pool tasks with a higher integer value (see [next section](#pools--ranks));
 - `char`, `word`, `args` and `desc` values giving an `info` value approximating '-f, --folder [NAME]  create a new folder here', meaning the task will be run if the '-f' or '--folder' flag is used;
 - a function to be called by the task (`call`).
+
+Three option instances are assigned to variables for ease of reuse in multiple tools, specifically:
+
+- a standard `--backup` option to `OPT_BACKUP`;
+- a standard `--update` option to `OPT_UPDATE`;
+- a standard `--help` option to `OPT_HELP`.
 
 ### Pools & ranks
 
@@ -253,7 +262,7 @@ The `Template` class can be used in preparing for and performing actions at the 
 One or more templates can be inserted using the `insert_templates` method:
 
 ```python
-tool_1.insert_templates([template_1, ...])
+tools["tool_1"].insert_templates([template_1, ...])
 ```
 
 ### Template (template class)
@@ -292,7 +301,7 @@ This is a fairly complex example. Take a look at the option instance functions i
 
 ## Runtime overview
 
-1. All tools are instantiated, receive any instances of a resource or template class and are added to the `tools` list, with one assigned to the `active_tool` variable.
+1. All tools are instantiated, receive any instances of a resource or template class and are added to the `tools` dictionary, with one assigned to the `active_tool` variable.
 2. Any relevant command line arguments are passed to the active tool's `use` method, otherwise the `show_help` method is called.
 3. The tool's `do_work` method calls any `prep` functions.
 4. At the task execution stage, via the `run_tasks` method, the tool: matches each flag to an option instance, subject to the availability of any `call` function present; queues each option instance and any relevant process instances in instances of the tool internal Task class, each option instance with any relevant arguments; reorders these task instances to prioritize lead pools in lead attribute order and resource instances within pools by rank; for each task instance calls any `call` function present, or otherwise queues in an instance of the tool internal Batch class any `items` list present, to be built at the build stage.
