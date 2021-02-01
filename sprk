@@ -1,5 +1,12 @@
 #!/usr/bin/python3
 
+# sprk v 1.1.0
+# ©2021 barcek
+# License: MIT
+# @ github.com
+# /barcek/sprk
+
+
 import sys
 from pathlib import Path
 import shutil
@@ -15,8 +22,7 @@ sprkfilename = "Sprkfile"
 path_to_self = Path(sys.argv[0]).resolve()
 path_to_sprkfile = current_dir / sprkfilename
 
-tools = []
-active_tool = None
+tools = {}
 
 
 # template class (Template)
@@ -326,7 +332,8 @@ class Runner(Composer):
         self.vars["values"] = {**self.vars["values"], **{
             "align": {"string": "ALIGN", "source": None},
             "blank": {"string": "BLANK", "source": None},
-            "empty": {"string": "EMPTY", "source": None}
+            "empty": {"string": "EMPTY", "source": None},
+            "using": {"string": "USING", "source": None}
         }}
         self.state = {**self.state, **{
             "caps": [
@@ -361,11 +368,15 @@ class Runner(Composer):
             if len(getattr(host, objects)) > 1 and getattr(object, key) is not None]
 
     @staticmethod
+    def get_using():
+        return [key for key, value in tools.items() if value == active_tool][0]
+
+    @staticmethod
     def show_help(self, pars=[]):
         """Builds a help page usiing any resource instance info attributes."""
         infos = self.tool.getattrs(self.tool, "resources", "info")
-        align_id, blank_id, empty_id = [self.tool.build_identifier(key)
-            for key in ["align", "blank", "empty"]]
+        align_id, blank_id, empty_id, using_id = [self.tool.build_identifier(key)
+            for key in ["align", "blank", "empty", "using"]]
         lengths = [len(info[:info.find(align_id)]) for info in infos
             if info is not None and info.find(align_id) != -1]
         max_length, spaces, i = max(lengths), 1, 0
@@ -377,6 +388,8 @@ class Runner(Composer):
                 print()
             elif info.find(empty_id) != -1:
                 pass
+            elif info.find(using_id) != -1:
+                print(info.replace(using_id, self.tool.get_using()))
             elif info is not None:
                 print(info)
 
@@ -548,7 +561,37 @@ class Sprker(Runner):
             print(err)
 
 
-# template functions, receiving template instance as 'self'
+# resource instances
+
+BLANK_LINE = Resource({"info": "{BLANK}"})
+USAGE_LINE = Resource({"info": "Usage: sprk [--option/-o [ARG ...] ...]"})
+USING_LINE = Resource({"info": "Using: {USING}"})
+
+OPT_BACKUP = Option({
+    "desc": f"save sprk as/over a {sprkfilename} here or in given DIR",
+    "word": "backup",
+    "char": "B",
+    "call": Sprker.backup,
+    "args": ["[DIR]"]
+})
+OPT_UPDATE = Option({
+    "desc": f"replace sprk from a {sprkfilename} here or in given DIR",
+    "word": "update",
+    "char": "U",
+    "call": Sprker.update,
+    "args": ["[DIR]"]
+})
+OPT_HELP = Option({
+    "desc": "show the help page",
+    "word": "help",
+    "char": "h",
+    "call": Runner.show_help
+})
+
+
+# tool_1
+
+# tool_1 template functions, receiving template instance as 'self'
 
 def create_ignores(self):
     """Prepares each file in the ignores template and calls to queue all as a batch."""
@@ -568,7 +611,21 @@ def create_ignores(self):
     self.tool.queue_items(self.tool.state["root"], items)
 
 
-# resource functions,
+# tool_1 resource variables,
+# e.g. strings & lists of dictionaries for resource 'items' attribute
+
+root_items = {
+
+    "readme": [
+        {
+            "filename": "README.md",
+            "content": "# {STATE:name}"
+        }
+    ]
+}
+
+
+# tool_1 resource functions,
 # receiving resource instance as 'self' & any arguments as 'pars',
 # optionally returning a dictionary with any state changes
 
@@ -605,32 +662,21 @@ def initialize_git(self, pars=[]):
     })
 
 
-# resource variables,
-# e.g. strings & lists of dictionaries for resource 'items' attribute
+# tool_1 tool class instantiation, passing configuration dictionary,
+# with assignment of instance to key in tools dictionary
 
-root_items = {
-
-    "readme": [
-        {
-            "filename": "README.md",
-            "content": "# {STATE:name}"
-        }
-    ]
-}
-
-
-# tool_1 tool class instantiation, passing configuration dictionary
-
-tool_1 = Sprker({
-    "prep": [lambda: print("Starting...")],
-    "lead": ["project"],  # order of priority for any pools
-    "tidy": [lambda: print("Finished.")]
+tools.update({
+    "tool_1": Sprker({
+        "prep": [lambda: print("Starting...")],
+        "lead": ["project"],  # order of priority for any pools
+        "tidy": [lambda: print("Finished.")]
+    })
 })
 
 
-# tool_1 extension, passing template & resource class instantiations
+# tool_1 instance extension, passing template & resource class instantiations
 
-tool_1.insert_templates([
+tools["tool_1"].insert_templates([
 
     Template({
         "name": "ignores",
@@ -645,11 +691,11 @@ tool_1.insert_templates([
     })
 ])
 
-tool_1.provide_resources([
+tools["tool_1"].provide_resources([
 
-    Resource({"info": "{BLANK}"}),
-    Resource({"info": "Usage: sprk [--option/-o [ARG ...] ...]"}),
-    Resource({"info": "{BLANK}"}),
+    BLANK_LINE,
+    USAGE_LINE,
+    BLANK_LINE,
 
     Option({
         "pool": "project",
@@ -661,9 +707,9 @@ tool_1.provide_resources([
         "args": ["[NAME]"]
     }),
 
-    Resource({"info": "{BLANK}"}),
+    BLANK_LINE,
     Resource({"info": "... and inside, or here if no such folder requested, do the following:"}),
-    Resource({"info": "{BLANK}"}),
+    BLANK_LINE,
 
     Option({
         "pool": "project",
@@ -674,48 +720,32 @@ tool_1.provide_resources([
         "call": initialize_git
     }),
     Option({
-        "desc": "create a README.md file",
+        "desc": "create a README.md file w/ any NAME as its title",
         "word": "readme",
         "char": "r",
         "items": root_items["readme"]
     }),
 
-    Resource({"info": "{BLANK}"}),
+    BLANK_LINE,
     Resource({"info": "... and/or do the following:"}),
-    Resource({"info": "{BLANK}"}),
+    BLANK_LINE,
 
-    Option({
-        "desc": f"save sprk as/over a {sprkfilename} here or in given DIR",
-        "word": "backup",
-        "char": "B",
-        "call": Sprker.backup,
-        "args": ["[DIR]"]
-    }),
-    Option({
-        "desc": f"replace sprk from a {sprkfilename} here or in given DIR",
-        "word": "update",
-        "char": "U",
-        "call": Sprker.update,
-        "args": ["[DIR]"]
-    }),
+    OPT_BACKUP,
+    OPT_UPDATE,
 
-    Resource({"info": "{BLANK}"}),
+    BLANK_LINE,
 
-    Option({
-        "desc": "show the help page",
-        "word": "help",
-        "char": "h",
-        "call": Runner.show_help
-    }),
+    OPT_HELP,
 
-    Resource({"info": "{BLANK}"})
+    BLANK_LINE,
+    USING_LINE,
+    BLANK_LINE
 ])
 
 
-# tool_1 assignment to tools & active_tool variables
+# assignment to active_tool variable
 
-tools.append(tool_1)
-active_tool = tool_1
+active_tool = tools["tool_1"]
 
 
 # use of active_tool, passing any relevant arguments
