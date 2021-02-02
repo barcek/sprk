@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.1.0
+# sprk v 1.1.1
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -379,7 +379,7 @@ class Runner(Composer):
             for key in ["align", "blank", "empty", "using"]]
         lengths = [len(info[:info.find(align_id)]) for info in infos
             if info is not None and info.find(align_id) != -1]
-        max_length, spaces, i = max(lengths), 1, 0
+        max_length, spaces, i = max(lengths), 2, 0
         for info in infos:
             if info.find(align_id) != -1:
                 print(info.replace(align_id, " " * (max_length - lengths[i] + spaces)))
@@ -568,14 +568,14 @@ USAGE_LINE = Resource({"info": "Usage: sprk [--option/-o [ARG ...] ...]"})
 USING_LINE = Resource({"info": "Using: {USING}"})
 
 OPT_BACKUP = Option({
-    "desc": f"save sprk as/over a {sprkfilename} here or in given DIR",
+    "desc": f"save sprk as/over a {sprkfilename} here or in any DIR",
     "word": "backup",
     "char": "B",
     "call": Sprker.backup,
     "args": ["[DIR]"]
 })
 OPT_UPDATE = Option({
-    "desc": f"replace sprk from a {sprkfilename} here or in given DIR",
+    "desc": f"replace sprk from a {sprkfilename} here or in any DIR",
     "word": "update",
     "char": "U",
     "call": Sprker.update,
@@ -590,6 +590,8 @@ OPT_HELP = Option({
 
 
 # tool_1
+
+import webbrowser
 
 # tool_1 template functions, receiving template instance as 'self'
 
@@ -620,6 +622,11 @@ root_items = {
         {
             "filename": "README.md",
             "content": "# {STATE:name}"
+        }
+    ],
+    "license": [
+        {
+            "filename": "LICENSE.txt"
         }
     ]
 }
@@ -661,6 +668,9 @@ def initialize_git(self, pars=[]):
         ]
     })
 
+def open_browser_tab(url):
+    webbrowser.open_new_tab(url)
+
 
 # tool_1 tool class instantiation, passing configuration dictionary,
 # with assignment of instance to key in tools dictionary
@@ -696,6 +706,8 @@ tools["tool_1"].provide_resources([
     BLANK_LINE,
     USAGE_LINE,
     BLANK_LINE,
+    Resource({"info": "Apply any or all of the following options for the action(s) described."}),
+    BLANK_LINE,
 
     Option({
         "pool": "project",
@@ -708,26 +720,44 @@ tools["tool_1"].provide_resources([
     }),
 
     BLANK_LINE,
-    Resource({"info": "... and inside, or here if no such folder requested, do the following:"}),
+    Resource({"info": "and then inside this folder, or here if not created, do the following:"}),
     BLANK_LINE,
 
     Option({
         "pool": "project",
         "rank": 2,
         "desc": "initialize a Git repo & create a .gitignore file",
-        "word": "git",
+        "word": "gitinit",
         "char": "g",
         "call": initialize_git
     }),
+
+    BLANK_LINE,
+
     Option({
         "desc": "create a README.md file w/ any NAME as its title",
         "word": "readme",
         "char": "r",
         "items": root_items["readme"]
     }),
+    Option({
+        "desc": "create a blank LICENSE.txt file (cf. '--choose')",
+        "word": "license",
+        "char": "l",
+        "items": root_items["license"]
+    }),
 
     BLANK_LINE,
-    Resource({"info": "... and/or do the following:"}),
+    Resource({"info": "and/or do the following:"}),
+    BLANK_LINE,
+
+    Option({
+        "desc": "open the 'choosealicense.com' list in a new tab",
+        "word": "choose",
+        "char": "c",
+        "call": lambda self, pars=[]: open_browser_tab("https://choosealicense.com/licenses")
+    }),
+
     BLANK_LINE,
 
     OPT_BACKUP,
@@ -735,8 +765,25 @@ tools["tool_1"].provide_resources([
 
     BLANK_LINE,
 
+    Option({
+        "desc": "open the sprk Github repo page in a browser tab",
+        "word": "sprk",
+        "char": "s",
+        "call": lambda self, pars=[]: open_browser_tab("https://github.com/barcek/sprk")
+    }),
+    Option({
+        "desc": "open the Python3 documentation in a browser tab",
+        "word": "python",
+        "char": "p",
+        "call": lambda self, pars=[]: open_browser_tab("https://www.python.org/doc/")
+    }),
+
+    BLANK_LINE,
+
     OPT_HELP,
 
+    BLANK_LINE,
+    Resource({"info": f"and customize the tool: add, modify or remove any option via {sprkfilename}."}),
     BLANK_LINE,
     USING_LINE,
     BLANK_LINE
