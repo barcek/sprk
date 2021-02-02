@@ -20,7 +20,7 @@ Sprk is a versatile command line tool, similar in concept to the `argparse` modu
 
 ## Getting started
 
-Sprk 1.1.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.1.1 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
