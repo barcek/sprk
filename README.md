@@ -3,8 +3,8 @@
 Sprk is a versatile command line tool, similar in concept to the `argparse` module in the Python standard library. It's intended as a template to be extended and adapted by the user from any directory and to any degree as circumstances and needs change. It does everything by default with a single source file.
 
 - [Getting started](#getting-started)
-    - [The basic tool](#the-basic-tool)
-    - [Multiple tools](#multiple-tools)
+    - [The basic tools](#the-basic-tools)
+    - [Additional sprks](#additional-sprks)
 - [Creating a tool](#creating-a-tool)
     - [Runner & Sprker (tool classes)](#runner--sprker-tool-classes)
     - [Task (tool internal class)](#task-tool-internal-class)
@@ -20,7 +20,7 @@ Sprk is a versatile command line tool, similar in concept to the `argparse` modu
 
 ## Getting started
 
-Sprk 1.1.1 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.2.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -34,17 +34,27 @@ sprk -h
 
 On the help page you'll see that the command `sprk -B` or `sprk --backup` calls a copy of source code to the current directory, as a so-called sprkfile, with the default name 'Sprkfile'. Changes can be made to the code and the changed file copied over the existing sprk source file with the command `sprk -U` or `sprk --update`.
 
-### The basic tool
+### The basic tools
 
-The source code in this repository provides a simple general command line tool as well as underlying logic for tools of far greater scope and complexity. It offers an example for reference and a starting point for other uses.
+The source code in this repository provides three simple command line tools:
+
+- 'creator';
+- 'adapter';
+- 'combined', which includes the specific options from each of the others.
+
+It also provides the underlying logic for tools of far greater scope and complexity.
+
+The three are offered as examples for reference and a starting point for other uses.
+
+The 'combined' tool is the default active tool.
+
+It is possible to switch among the available tools with the command `sprk -S` or `sprk --switch` followed by the preferred tool name. Using either of these commands without a tool name will confirm the tool currently being used and list all tools available.
 
 It may be best to take a look at the source file and experiment with the options and code before reading further.
 
-### Multiple tools
+### Additional sprks
 
-If you'd like to use more than one version of the source file and avoid a new version's sprkfile being overwritten in error, you can change the value of its `sprkfilename` variable.
-
-It might be more 'sprkic', however, to instantiate an additional tool in the sole source file and add this new tool to the `tools` dictionary. Each tool could then have an option that allows the `tools` dictionary to be displayed, the `active_tool` variable changed and the alternative tool used.
+If you'd like to use more than one version of the source file and avoid a new version's sprkfile being overwritten in error, you can change the value of its `SPRKFILENAME` constant.
 
 ## Creating a tool
 
@@ -69,9 +79,9 @@ Other possible keys are `name` for the project name string value, `root`, `code`
 
 A tool can also be extended by providing resources and inserting templates (see [Providing resources](#providing-resources) and [Inserting templates](#inserting-templates) below).
 
-Each new tool should be added to the `tools` dictionary and one of the tools in this dictionary should be assigned to the `active_tool` variable.
+Each new tool should be added to the `TOOLS` dictionary and one of the tools in this dictionary should be assigned to the `ACTIVE_TOOL` constant.
 
-In the current source file, the sole tool is added to the dictionary immediately.
+In the current source file, the three tools are added to the dictionary immediately.
 
 ### Runner & Sprker (tool classes)
 
@@ -89,7 +99,7 @@ The above order is the order in which these events occur (see [Runtime overview]
 
 #### Sprker (tool class)
 
-The `Sprker` is a descendant of the `Runner` providing two additional methods, one to back up sprk in the form of a sprkfile and one to update sprk from a sprkfile (see [Getting started](#getting-started) above).
+The `Sprker` is a descendant of the `Runner` providing three additional methods, one to switch among tools, one to back up sprk in the form of a sprkfile and one to update sprk from a sprkfile (see [Getting started](#getting-started) above).
 
 #### Task (tool internal class)
 
@@ -156,11 +166,12 @@ The values in this case are:
 - `char`, `word`, `args` and `desc` values giving an `info` value approximating '-f, --folder [NAME]  create a new folder here', meaning the task will be run if the '-f' or '--folder' flag is used;
 - a function to be called by the task (`call`).
 
-Three option instances are assigned to variables for ease of reuse in multiple tools, specifically:
+Four option configurations are assigned to constants for ease of reuse in multiple tools, specifically:
 
-- a standard `--backup` option to `OPT_BACKUP`;
-- a standard `--update` option to `OPT_UPDATE`;
-- a standard `--help` option to `OPT_HELP`.
+- a standard `--backup` option to `BACKUP`;
+- a standard `--update` option to `UPDATE`;
+- a standard `--switch` option to `SWITCH`;
+- a standard `--help` option to `HELP`.
 
 ### Pools & ranks
 
@@ -273,7 +284,7 @@ The `core`, `parts` and `calls` lists can be extended by values passed at instan
 
 ### Sample template
 
-Below is an example of a `Template` instantiation, for composition of '-ignore'-type files, e.g. .gitignore, as in the source file in this repository:
+Below is an example of a `Template` instantiation, for composition of '-ignore'-type files, e.g. '.gitignore'. This particular configuration can be found in the source file in this repository.
 
 ```python
 Template({
@@ -301,7 +312,7 @@ This is a fairly complex example. Take a look at the option instance functions i
 
 ## Runtime overview
 
-1. All tools are instantiated, receive any instances of a resource or template class and are added to the `tools` dictionary, with one assigned to the `active_tool` variable.
+1. All tools are instantiated, receive any instances of a resource or template class and are added to the `TOOLS` dictionary, with one assigned to the `ACTIVE_TOOL` constant.
 2. Any relevant command line arguments are passed to the active tool's `use` method, otherwise the `show_help` method is called.
 3. The tool's `do_work` method calls any `prep` functions.
 4. At the task execution stage, via the `run_tasks` method, the tool: matches each flag to an option instance, subject to the availability of any `call` function present; queues each option instance and any relevant process instances in instances of the tool internal Task class, each option instance with any relevant arguments; reorders these task instances to prioritize lead pools in lead attribute order and resource instances within pools by rank; for each task instance calls any `call` function present, or otherwise queues in an instance of the tool internal Batch class any `items` list present, to be built at the build stage.
@@ -317,7 +328,6 @@ The following are possible next steps in the development of the code base. The g
 - add a runtime undo option for rollback on error at the build stage
 - offer less verbose or no terminal output at runtime
 - support a list of current project directories for ease of movement among them
-- include a method for tool switching at runtime
 - enable viewing of snippets stored in source file variables
 - enable assignment of snippets to source file variables from the command line or a file, possibly by line number or identifier
 - enable extraction of configuration, template insertions and resource provisions to extension file for sharing
