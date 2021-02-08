@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.1.1
+# sprk v 1.2.0
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -14,15 +14,15 @@ from itertools import count
 import os
 
 
-# base variables
+# base constants
 
-current_dir = Path.cwd()
-sprkfilename = "Sprkfile"
+CURRENT_DIR = Path.cwd()
+SPRKFILENAME = "Sprkfile"
 
-path_to_self = Path(sys.argv[0]).resolve()
-path_to_sprkfile = current_dir / sprkfilename
+PATH_TO_SELF = Path(sys.argv[0]).resolve()
+PATH_TO_SPRKFILE = CURRENT_DIR / SPRKFILENAME
 
-tools = {}
+TOOLS = {}
 
 
 # template class (Template)
@@ -86,8 +86,8 @@ class Builder():
         }
         self.state = {
             "name": "project" if "name" not in pars else pars["name"],
-            "root": current_dir if "root" not in pars else Path(pars["root"]),
-            "code": current_dir if "code" not in pars else Path(pars["code"]),
+            "root": CURRENT_DIR if "root" not in pars else Path(pars["root"]),
+            "code": CURRENT_DIR if "code" not in pars else Path(pars["code"]),
             "main": None if "main" not in pars else Path(pars["main"]),
             "nums": {}
         }
@@ -96,7 +96,7 @@ class Builder():
     class Batch():
 
         def __init__(self, pars):
-            self.dir = current_dir if "dir" not in pars else pars["dir"]
+            self.dir = CURRENT_DIR if "dir" not in pars else pars["dir"]
             self.items = [] if "items" not in pars else pars["items"]
 
     def update_state(self, new_state={}):
@@ -121,54 +121,59 @@ class Builder():
             print(err)
         return content
 
-    def write_file(self, path=None, content="", flag="a"):
+    def write_file(self, path=None, content="", flag="a", messages=None):
         """Writes any content to a file, calling to create any filename needed."""
         path = path or self.name_element("file")
+        messages = messages or {
+            "success": f"{'Wrote' if flag == 'w' else 'Added'}"
+                f" {len(content)} characters to file {path}",
+            "failure": f"Error: content may not have been written to file '{path}':"
+                f"\nContent:\n{content}"
+        }
         try:
             with open(path, flag) as f:
                 f.write(content)
-            print(f"{'Wrote' if flag == 'w' else 'Added'} {len(content)} characters to file {path}")
+            print(messages["success"])
         except Exception as err:
-            print(
-                f"Error: content may not have been written to file '{path}':"
-                f"\nContent:\n{content}"
-            )
+            print(messages["failure"])
             print(err)
 
-    def build_identifier(self, key):
+    def build_identifier(self, key, values, delims):
         """Returns all or part of a string identifying a given variable."""
-        opening, divider, closing = self.vars["delims"].values()
-        string, source = self.vars["values"][key].values()
+        opening, divider, closing = delims.values()
+        string, source = values[key].values()
         return opening + string + (divider if source is not None else closing)
 
-    def identify_variable(self, content, key):
+    def identify_variable(self, content, key, values, delims, ident):
         """Returns details of any variable found by its identifier in content."""
-        ident = self.build_identifier(key)
         start = content.find(ident)
         if start == -1:
             return
-        elif self.vars["values"][key]["source"] is None:
+        elif values[key]["source"] is None:
             whole, extra = ident, None
         else:
-            end = start + content[start:].find(self.vars["delims"]["closing"])
+            end = start + content[start:].find(delims["closing"])
             extra = content[start + len(ident):end]
-            whole = ident + extra + self.vars["delims"]["closing"]
+            whole = ident + extra + delims["closing"]
         return {
             "whole": whole,
             "extra": extra,
-            "source": self.vars["values"][key]["source"]
+            "source": None if "source" not in values[key] else values[key]["source"]
         }
 
-    def replace_variables(self, content, name):
+    def replace_variables(self, content, name, values, delims):
         """Returns content with any variables present identified and replaced."""
         new = "<!--SOURCE NOT FOUND-->"
-        for key in list(self.vars["values"].keys()):
+        for key in list(values.keys()):
             while True:
-                var = self.identify_variable(content, key)
-                if var is None:
+                ident = self.build_identifier(key, values, delims)
+                var = self.identify_variable(content, key, values, delims, ident)
+                if var is None or new.find(ident) != -1:
                     break
                 whole, extra, source = var.values()
-                if extra and hasattr(self, source)\
+                if not extra:
+                    new = values[key]["source"]
+                elif extra and hasattr(self, source)\
                     and extra in getattr(self, source):
                     new = str(getattr(self, source)[extra])
                 elif extra:
@@ -197,7 +202,7 @@ class Builder():
         return current[:start + length] + content + delims["closing"]\
              + current[start + length + 1:]
 
-    def create_file(self, dir=current_dir, filename=None, content="",
+    def create_file(self, dir=CURRENT_DIR, filename=None, content="",
             input={"flag": "a"}):
         """Creates a file if not present, then calls to modify and write any text."""
         name = filename or self.name_element("file")
@@ -220,11 +225,12 @@ class Builder():
                 current = self.insert_content(current, content, **input)
                 content = current
                 input["flag"] = "w"
-            content = self.replace_variables(content, name)
+            content = self.replace_variables(content, name,
+                self.vars["values"], self.vars["delims"])
             self.write_file(path, content, input["flag"])
         return True
 
-    def create_folder(self, dir=current_dir, dirname=None, items=None):
+    def create_folder(self, dir=CURRENT_DIR, dirname=None, items=None):
         """Creates a folder if not present, then calls to build any items."""
         name = dirname or self.name_element("folder")
         path = dir / name
@@ -242,7 +248,7 @@ class Builder():
             self.create_items(items, path)
         return True
 
-    def create_items(self, items=[], dir=current_dir):
+    def create_items(self, items=[], dir=CURRENT_DIR):
         """Builds a file and folder structure, making any call first per item."""
         for item in items:
             if "call" in item:
@@ -259,7 +265,7 @@ class Builder():
                     None if "items" not in item else item["items"] or None
                 )
 
-    def queue_items(self, dir=current_dir, items=[]):
+    def queue_items(self, dir=CURRENT_DIR, items=[]):
         """Combines and queues as a batch a directory and a set of items."""
         self.batches.append(self.Batch({
             "dir": dir,
@@ -369,17 +375,19 @@ class Runner(Composer):
 
     @staticmethod
     def get_using():
-        return [key for key, value in tools.items() if value == active_tool][0]
+        """Returns the key corresponding to the active tool in the TOOLS dictionary."""
+        return [key for key, value in TOOLS.items() if value == ACTIVE_TOOL][0]
 
     @staticmethod
     def show_help(self, pars=[]):
-        """Builds a help page usiing any resource instance info attributes."""
+        """Builds a help page using any resource instance info attributes."""
         infos = self.tool.getattrs(self.tool, "resources", "info")
-        align_id, blank_id, empty_id, using_id = [self.tool.build_identifier(key)
+        align_id, blank_id, empty_id, using_id = [self.tool.build_identifier(key,
+            self.tool.vars["values"], self.tool.vars["delims"])\
             for key in ["align", "blank", "empty", "using"]]
         lengths = [len(info[:info.find(align_id)]) for info in infos
             if info is not None and info.find(align_id) != -1]
-        max_length, spaces, i = max(lengths), 2, 0
+        max_length, spaces, i = max(lengths), 1, 0
         for info in infos:
             if info.find(align_id) != -1:
                 print(info.replace(align_id, " " * (max_length - lengths[i] + spaces)))
@@ -389,7 +397,11 @@ class Runner(Composer):
             elif info.find(empty_id) != -1:
                 pass
             elif info.find(using_id) != -1:
-                print(info.replace(using_id, self.tool.get_using()))
+                if pars and isinstance(pars[0], dict) and "using" in pars[0]:
+                    using = pars[0]["using"]
+                else:
+                    using = self.tool.get_using()
+                print(info.replace(using_id, using))
             elif info is not None:
                 print(info)
 
@@ -523,20 +535,42 @@ class Sprker(Runner):
         super(Sprker, self).__init__(pars)
 
     @staticmethod
+    def switch(self, pars=[]):
+        """Prints all items in the TOOLS dictionary or replaces the active tool."""
+        old = self.tool.get_using()
+        if not pars:
+            print(f"Active tool: {old}. Available: {'; '.join(TOOLS.keys())}.")
+            return {}
+        new = pars[0]
+        if new not in TOOLS.keys():
+            print(f"Tool '{new}' does not exist.")
+            return {}
+        content = self.tool.read_file(PATH_TO_SELF)
+        values = {"new": {"string": old, "source": f'ACTIVE_TOOL = TOOLS["{new}"]'}}
+        delims = {"opening": 'ACTIVE_TOOL = TOOLS["', "divider": "", "closing": '"]'}
+        content = self.tool.replace_variables(content, PATH_TO_SELF, values, delims)
+        messages = {
+            "success": f"Switched from {old} to {new}.",
+            "failure": "May not have switched from {old} to {new}."
+        }
+        self.tool.write_file(PATH_TO_SELF, content, "w", messages)
+        self.tool.show_help(Option({"tool": TOOLS[new]}), [{"using": new}])
+
+    @staticmethod
     def update(self, pars=[]):
         """Attempts to copy a sprkfile over the sprk source file."""
-        src = path_to_sprkfile
+        src = PATH_TO_SPRKFILE
         if pars and os.path.isfile(pars[0])\
-            and os.path.basename(pars[0]) == sprkfilename:
+            and os.path.basename(pars[0]) == SPRKFILENAME:
             src = pars[0]
         elif pars and os.path.isdir(pars[0])\
-            and sprkfilename in os.listdir(pars[0]):
-            src = Path(pars[0]) / sprkfilename
+            and SPRKFILENAME in os.listdir(pars[0]):
+            src = Path(pars[0]) / SPRKFILENAME
         elif pars:
-            print(f"Note: '{sprkfilename}' not found at {pars[0]}.")
+            print(f"Note: '{SPRKFILENAME}' not found at {pars[0]}.")
             return {}
         try:
-            shutil.copy(src, path_to_self)
+            shutil.copy(src, PATH_TO_SELF)
             print("Updated sprk.")
         except Exception as err:
             print(f"May not have updated sprk.")
@@ -545,16 +579,16 @@ class Sprker(Runner):
     @staticmethod
     def backup(self, pars=[]):
         """Attempts to copy the sprk source file to another location."""
-        dest = path_to_sprkfile
-        if pars and os.path.basename(pars[0]) == sprkfilename:
+        dest = PATH_TO_SPRKFILE
+        if pars and os.path.basename(pars[0]) == SPRKFILENAME:
             dest = pars[0]
         elif pars and os.path.isdir(pars[0]):
-            dest = Path(pars[0]) / sprkfilename
+            dest = Path(pars[0]) / SPRKFILENAME
         elif pars:
-            print(f"{sprkfilename} not copied: {pars[0]} not a valid argument for DIR.")
+            print(f"{SPRKFILENAME} not copied: {pars[0]} not a valid argument for DIR.")
             return {}
         try:
-            shutil.copy(path_to_self, dest)
+            shutil.copy(PATH_TO_SELF, dest)
             print(f"Copied sprk to {dest}")
         except Exception as err:
             print(f"May not have copied sprk to {dest}")
@@ -563,37 +597,45 @@ class Sprker(Runner):
 
 # resource instances
 
-BLANK_LINE = Resource({"info": "{BLANK}"})
-USAGE_LINE = Resource({"info": "Usage: sprk [--option/-o [ARG ...] ...]"})
-USING_LINE = Resource({"info": "Using: {USING}"})
+BLANK = Resource({"info": "{BLANK}"})
+USAGE = Resource({"info": "Usage: sprk [--option/-o [ARG ...] ...]"})
+USING = Resource({"info": "Using: {USING}"})
 
-OPT_BACKUP = Option({
-    "desc": f"save sprk as/over a {sprkfilename} here or in any DIR",
+SWITCH = {
+    "desc": f"switch to TOOL or show tools currently available",
+    "word": "switch",
+    "char": "S",
+    "call": Sprker.switch,
+    "args": ["[TOOL]"]
+}
+BACKUP = {
+    "desc": f"save sprk as/over a {SPRKFILENAME} here or in any DIR",
     "word": "backup",
     "char": "B",
     "call": Sprker.backup,
     "args": ["[DIR]"]
-})
-OPT_UPDATE = Option({
-    "desc": f"replace sprk from a {sprkfilename} here or in any DIR",
+}
+UPDATE = {
+    "desc": f"replace sprk from a {SPRKFILENAME} here or in any DIR",
     "word": "update",
     "char": "U",
     "call": Sprker.update,
     "args": ["[DIR]"]
-})
-OPT_HELP = Option({
+}
+HELP = {
     "desc": "show the help page",
     "word": "help",
     "char": "h",
     "call": Runner.show_help
-})
+}
 
 
-# tool_1
+# TOOL: 'combined'
 
 import webbrowser
 
-# tool_1 template functions, receiving template instance as 'self'
+
+# 'combined' template functions, receiving template instance as 'self'
 
 def create_ignores(self):
     """Prepares each file in the ignores template and calls to queue all as a batch."""
@@ -613,10 +655,10 @@ def create_ignores(self):
     self.tool.queue_items(self.tool.state["root"], items)
 
 
-# tool_1 resource variables,
+# 'combined' resource constants,
 # e.g. strings & lists of dictionaries for resource 'items' attribute
 
-root_items = {
+ROOT_ITEMS = {
 
     "readme": [
         {
@@ -632,15 +674,15 @@ root_items = {
 }
 
 
-# tool_1 resource functions,
+# 'combined' resource functions,
 # receiving resource instance as 'self' & any arguments as 'pars',
 # optionally returning a dictionary with any state changes
 
 def start_project(self, pars=[]):
     """Attempts to create a project folder and updates name and paths in state."""
     name = pars[0] if pars else self.tool.state["name"]
-    path = current_dir / name
-    if path in current_dir.iterdir():
+    path = CURRENT_DIR / name
+    if path in CURRENT_DIR.iterdir():
         response = input(
             f"Folder '{name}' already exists. By continuing, files in the "
             f"existing '{name}' may be overwritten or otherwise modified.\n"
@@ -672,11 +714,80 @@ def open_browser_tab(url):
     webbrowser.open_new_tab(url)
 
 
-# tool_1 tool class instantiation, passing configuration dictionary,
-# with assignment of instance to key in tools dictionary
+# 'combined' template instances
 
-tools.update({
-    "tool_1": Sprker({
+IGNORES = {
+    "name": "ignores",
+    "core": ["files"],
+    "form": {
+        "rein": [],  # item type, reinstalled (str)
+        "nonr": [],  # item type, non-runtime (str)
+        "sens": [],  # item type, sensitive (str)
+        "files": [],  # {"name": filename, "list": [type]}
+        "calls": [create_ignores]
+    }
+}
+
+
+# 'combined' resource instances
+
+FOLDER = {
+    "pool": "project",
+    "rank": 1,
+    "desc": "create a project folder here, with NAME if given",
+    "word": "folder",
+    "char": "f",
+    "call": start_project,
+    "args": ["[NAME]"]
+}
+
+GITINIT = {
+    "pool": "project",
+    "rank": 2,
+    "desc": "initialize a Git repo & create a .gitignore file",
+    "word": "gitinit",
+    "char": "g",
+    "call": initialize_git
+}
+README = {
+    "desc": "create a README.md file w/ any NAME as its title",
+    "word": "readme",
+    "char": "r",
+    "items": ROOT_ITEMS["readme"]
+}
+LICENSE = {
+    "desc": "create a blank LICENSE.txt file (cf. '--choose')",
+    "word": "license",
+    "char": "l",
+    "items": ROOT_ITEMS["license"]
+}
+
+CHOOSE = {
+    "desc": "open the 'choosealicense.com' list in a new tab",
+    "word": "choose",
+    "char": "c",
+    "call": lambda self, pars=[]: open_browser_tab("https://choosealicense.com/licenses")
+}
+
+SPRK = {
+    "desc": "open the sprk Github repo page in a browser tab",
+    "word": "sprk",
+    "char": "s",
+    "call": lambda self, pars=[]: open_browser_tab("https://github.com/barcek/sprk")
+}
+PYTHON = {
+    "desc": "open the Python3 documentation in a browser tab",
+    "word": "python",
+    "char": "p",
+    "call": lambda self, pars=[]: open_browser_tab("https://www.python.org/doc/")
+}
+
+
+# 'combined' tool class instantiation, passing configuration dictionary,
+# with assignment of instance to key in TOOLS dictionary
+
+TOOLS.update({
+    "combined": Sprker({
         "prep": [lambda: print("Starting...")],
         "lead": ["project"],  # order of priority for any pools
         "tidy": [lambda: print("Finished.")]
@@ -684,122 +795,196 @@ tools.update({
 })
 
 
-# tool_1 instance extension, passing template & resource class instantiations
+# 'combined' instance extension, passing template & resource class instantiations
 
-tools["tool_1"].insert_templates([
+TOOLS["combined"].insert_templates([
 
-    Template({
-        "name": "ignores",
-        "core": ["files"],
-        "form": {
-            "rein": [],  # item type, reinstalled (str)
-            "nonr": [],  # item type, non-runtime (str)
-            "sens": [],  # item type, sensitive (str)
-            "files": [],  # {"name": filename, "list": [type]}
-            "calls": [create_ignores]
-        }
-    })
+    Template(IGNORES)
 ])
 
-tools["tool_1"].provide_resources([
+TOOLS["combined"].provide_resources([
 
-    BLANK_LINE,
-    USAGE_LINE,
-    BLANK_LINE,
+    BLANK,
+    USAGE,
+
+    BLANK,
     Resource({"info": "Apply any or all of the following options for the action(s) described."}),
-    BLANK_LINE,
+    BLANK,
 
-    Option({
-        "pool": "project",
-        "rank": 1,
-        "desc": "create a project folder here, with NAME if given",
-        "word": "folder",
-        "char": "f",
-        "call": start_project,
-        "args": ["[NAME]"]
-    }),
+    Option(FOLDER),
 
-    BLANK_LINE,
+    BLANK,
     Resource({"info": "and then inside this folder, or here if not created, do the following:"}),
-    BLANK_LINE,
+    BLANK,
 
-    Option({
-        "pool": "project",
-        "rank": 2,
-        "desc": "initialize a Git repo & create a .gitignore file",
-        "word": "gitinit",
-        "char": "g",
-        "call": initialize_git
-    }),
+    Option(GITINIT),
 
-    BLANK_LINE,
+    BLANK,
 
-    Option({
-        "desc": "create a README.md file w/ any NAME as its title",
-        "word": "readme",
-        "char": "r",
-        "items": root_items["readme"]
-    }),
-    Option({
-        "desc": "create a blank LICENSE.txt file (cf. '--choose')",
-        "word": "license",
-        "char": "l",
-        "items": root_items["license"]
-    }),
+    Option(README),
+    Option(LICENSE),
 
-    BLANK_LINE,
+    BLANK,
     Resource({"info": "and/or do the following:"}),
-    BLANK_LINE,
+    BLANK,
 
-    Option({
-        "desc": "open the 'choosealicense.com' list in a new tab",
-        "word": "choose",
-        "char": "c",
-        "call": lambda self, pars=[]: open_browser_tab("https://choosealicense.com/licenses")
-    }),
+    Option(CHOOSE),
 
-    BLANK_LINE,
+    BLANK,
 
-    OPT_BACKUP,
-    OPT_UPDATE,
+    Option(BACKUP),
+    Option(UPDATE),
 
-    BLANK_LINE,
+    BLANK,
 
-    Option({
-        "desc": "open the sprk Github repo page in a browser tab",
-        "word": "sprk",
-        "char": "s",
-        "call": lambda self, pars=[]: open_browser_tab("https://github.com/barcek/sprk")
-    }),
-    Option({
-        "desc": "open the Python3 documentation in a browser tab",
-        "word": "python",
-        "char": "p",
-        "call": lambda self, pars=[]: open_browser_tab("https://www.python.org/doc/")
-    }),
+    Option(SPRK),
+    Option(PYTHON),
 
-    BLANK_LINE,
+    BLANK,
 
-    OPT_HELP,
+    Option(SWITCH),
 
-    BLANK_LINE,
-    Resource({"info": f"and customize the tool: add, modify or remove any option via {sprkfilename}."}),
-    BLANK_LINE,
-    USING_LINE,
-    BLANK_LINE
+    BLANK,
+
+    Option(HELP),
+
+    BLANK,
+    Resource({"info": f"and customize the tool: add, modify or remove any option via {SPRKFILENAME}."}),
+    BLANK,
+
+    USING,
+    BLANK
 ])
 
 
-# assignment to active_tool variable
+# TOOL: 'creator'
 
-active_tool = tools["tool_1"]
+# 'creator' tool class instantiation, passing configuration dictionary,
+# & assignment of new instance to own key in TOOLS dictionary
+
+TOOLS.update({
+    "creator": Sprker({
+        "prep": [lambda: print("Starting...")],
+        "lead": ["project"],  # order of priority for any pools
+        "tidy": [lambda: print("Finished.")]
+    })
+})
+
+# 'creator' instance extension, passing template & resource class instantiations
+
+TOOLS["creator"].insert_templates([
+
+    Template(IGNORES)
+])
+
+TOOLS["creator"].provide_resources([
+
+    BLANK,
+    USAGE,
+
+    BLANK,
+    Resource({"info": "Apply any or all of the following options for the action(s) described."}),
+    BLANK,
+
+    Option(FOLDER),
+
+    BLANK,
+    Resource({"info": "and then inside this folder, or here if not created, do the following:"}),
+    BLANK,
+
+    Option(GITINIT),
+
+    BLANK,
+
+    Option(README),
+    Option(LICENSE),
+
+    BLANK,
+    Resource({"info": "and/or do the following:"}),
+    BLANK,
+
+    Option(CHOOSE),
+
+    BLANK,
+
+    Option(BACKUP),
+    Option(UPDATE),
+
+    BLANK,
+
+    Option(SWITCH),
+
+    BLANK,
+
+    Option(HELP),
+
+    BLANK,
+    Resource({"info": f"and customize the tool: add, modify or remove any option via {SPRKFILENAME}."}),
+    BLANK,
+
+    USING,
+    BLANK
+])
 
 
-# use of active_tool, passing any relevant arguments
+# TOOL: 'adapter'
+
+# 'adapter' tool class instantiation, passing configuration dictionary,
+# & assignment of new instance to own key in TOOLS dictionary
+
+TOOLS.update({
+    "adapter": Sprker({
+        "prep": [lambda: print("Starting...")],
+        "tidy": [lambda: print("Finished.")]
+    })
+})
+
+
+# 'adapter' instance extension, passing template & resource class instantiations
+
+TOOLS["adapter"].provide_resources([
+
+    BLANK,
+    USAGE,
+
+    BLANK,
+    Resource({"info": "Apply any or all of the following options for the action(s) described."}),
+    BLANK,
+
+    Option(SPRK),
+    Option(PYTHON),
+
+    BLANK,
+
+    Option(BACKUP),
+    Option(UPDATE),
+
+    BLANK,
+
+    Option(SWITCH),
+
+    BLANK,
+
+    Option(HELP),
+
+    BLANK,
+    Resource({"info": f"and customize the tool: add, modify or remove any option via {SPRKFILENAME}."}),
+    BLANK,
+
+    USING,
+    BLANK
+])
+
+
+# declaration & assignment for ACTIVE_TOOL constant
+
+ACTIVE_TOOL = TOOLS["combined"]
+
+# use of ACTIVE_TOOL, passing any relevant arguments
 
 if len(sys.argv) > 1:
-    active_tool.use(sys.argv)
+    ACTIVE_TOOL.use(sys.argv)
 elif "show_help" in dir(Runner):
     Runner.show_help(Resource({
-        "tool": active_tool
+        "tool": ACTIVE_TOOL
     }), None)
