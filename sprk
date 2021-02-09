@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.2.0
+# sprk v 1.2.1
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -138,48 +138,48 @@ class Builder():
             print(messages["failure"])
             print(err)
 
-    def build_identifier(self, key, values, delims):
-        """Returns all or part of a string identifying a given variable."""
+    def build_identifier(self, value, delims):
+        """Returns an object of substrings for all or part of an identifier."""
         opening, divider, closing = delims.values()
-        string, source = values[key].values()
-        return opening + string + (divider if source is not None else closing)
-
-    def identify_variable(self, content, key, values, delims, ident):
-        """Returns details of any variable found by its identifier in content."""
-        start = content.find(ident)
-        if start == -1:
-            return
-        elif values[key]["source"] is None:
-            whole, extra = ident, None
-        else:
-            end = start + content[start:].find(delims["closing"])
-            extra = content[start + len(ident):end]
-            whole = ident + extra + delims["closing"]
         return {
-            "whole": whole,
-            "extra": extra,
-            "source": None if "source" not in values[key] else values[key]["source"]
+            "head": opening + value["string"] + (divider if "source" in value else ""),
+            "body": "",
+            "tail": delims["closing"]
         }
 
-    def replace_variables(self, content, name, values, delims):
+    def identify_variable(self, content, identifier):
+        """Finds a string by identifier and returns any enclosed substring."""
+        start = content.find(identifier["head"])
+        if start == -1:
+            return None
+        end = start + content[start:].find(identifier["tail"])
+        identifier["body"] = content[start + len(identifier["head"]):end]
+        return identifier
+
+    def replace_identifier(self, content, name, value, identity):
+        """Returns content with one identifier replaced by a related value."""
+        head, body, tail = identity.values()
+        source = None if "source" not in value else value["source"]
+        new = f"<!-- NO USEABLE SOURCE FOR '{value['string']}{':' if body else ''}{body}' -->"
+        err = f"Error: in file '{name}' identifier location marked '{new}'."
+        if not body and isinstance(source, str):
+            new = source
+        elif body and hasattr(self, source) and body in getattr(self, source):
+            new = str(getattr(self, source)[body])
+        else:
+            print(err)
+        return content.replace(head + body + tail, new)
+
+    def handle_variables(self, content, name, values, delims):
         """Returns content with any variables present identified and replaced."""
-        new = "<!--SOURCE NOT FOUND-->"
         for key in list(values.keys()):
+            value = values[key]
             while True:
-                ident = self.build_identifier(key, values, delims)
-                var = self.identify_variable(content, key, values, delims, ident)
-                if var is None or new.find(ident) != -1:
+                identifier = self.build_identifier(value, delims)
+                identity = self.identify_variable(content, identifier)
+                if identity is None:
                     break
-                whole, extra, source = var.values()
-                if not extra:
-                    new = values[key]["source"]
-                elif extra and hasattr(self, source)\
-                    and extra in getattr(self, source):
-                    new = str(getattr(self, source)[extra])
-                elif extra:
-                    print(f"Error: data '{extra}' not found for file '{name}'"\
-                        f" - location in file marked '{new}'.")
-                content = content.replace(whole, new)
+                content = self.replace_identifier(content, name, value, identity)
         return content
 
     @staticmethod
@@ -225,7 +225,7 @@ class Builder():
                 current = self.insert_content(current, content, **input)
                 content = current
                 input["flag"] = "w"
-            content = self.replace_variables(content, name,
+            content = self.handle_variables(content, name,
                 self.vars["values"], self.vars["delims"])
             self.write_file(path, content, input["flag"])
         return True
@@ -336,10 +336,10 @@ class Runner(Composer):
     def __init__(self, pars):
         super(Runner, self).__init__(pars)
         self.vars["values"] = {**self.vars["values"], **{
-            "align": {"string": "ALIGN", "source": None},
-            "blank": {"string": "BLANK", "source": None},
-            "empty": {"string": "EMPTY", "source": None},
-            "using": {"string": "USING", "source": None}
+            "align": {"string": "ALIGN"},
+            "blank": {"string": "BLANK"},
+            "empty": {"string": "EMPTY"},
+            "using": {"string": "USING"}
         }}
         self.state = {**self.state, **{
             "caps": [
@@ -382,9 +382,13 @@ class Runner(Composer):
     def show_help(self, pars=[]):
         """Builds a help page using any resource instance info attributes."""
         infos = self.tool.getattrs(self.tool, "resources", "info")
-        align_id, blank_id, empty_id, using_id = [self.tool.build_identifier(key,
-            self.tool.vars["values"], self.tool.vars["delims"])\
-            for key in ["align", "blank", "empty", "using"]]
+        align_id, blank_id, empty_id, using_id = [
+            "".join(self.tool.build_identifier(
+                self.tool.vars["values"][key],
+                self.tool.vars["delims"]
+            ).values())\
+            for key in ["align", "blank", "empty", "using"]
+        ]
         lengths = [len(info[:info.find(align_id)]) for info in infos
             if info is not None and info.find(align_id) != -1]
         max_length, spaces, i = max(lengths), 1, 0
@@ -546,12 +550,10 @@ class Sprker(Runner):
             print(f"Tool '{new}' does not exist.")
             return {}
         content = self.tool.read_file(PATH_TO_SELF)
-        values = {"new": {"string": old, "source": f'ACTIVE_TOOL = TOOLS["{new}"]'}}
-        delims = {"opening": 'ACTIVE_TOOL = TOOLS["', "divider": "", "closing": '"]'}
-        content = self.tool.replace_variables(content, PATH_TO_SELF, values, delims)
+        content = content.replace(f'ACTIVE_TOOL = TOOLS["{old}"]', f'ACTIVE_TOOL = TOOLS["{new}"]')
         messages = {
             "success": f"Switched from {old} to {new}.",
-            "failure": "May not have switched from {old} to {new}."
+            "failure": f"May not have switched from {old} to {new}."
         }
         self.tool.write_file(PATH_TO_SELF, content, "w", messages)
         self.tool.show_help(Option({"tool": TOOLS[new]}), [{"using": new}])
