@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.2.1
+# sprk v 1.2.2
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 import shutil
 from itertools import count
+import types
 import os
 
 
@@ -142,25 +143,30 @@ class Builder():
         """Returns an object of substrings for all or part of an identifier."""
         opening, divider, closing = delims.values()
         return {
-            "head": opening + value["string"] + (divider if "source" in value else ""),
+            "head": opening + value["string"],
+            "neck": delims["divider"],
             "body": "",
             "tail": delims["closing"]
         }
 
     def identify_variable(self, content, identifier):
-        """Finds a string by identifier and returns any enclosed substring."""
+        """Seeks an identifier and returns either None or adjusted identifier."""
         start = content.find(identifier["head"])
         if start == -1:
             return None
         end = start + content[start:].find(identifier["tail"])
-        identifier["body"] = content[start + len(identifier["head"]):end]
+        gap = content[start + len(identifier["head"]):end]
+        if gap and gap.find(identifier["neck"]) != -1:
+            identifier["body"] = gap.replace(identifier["neck"], "")
+        else:
+            identifier["neck"] = ""
         return identifier
 
     def replace_identifier(self, content, name, value, identity):
         """Returns content with one identifier replaced by a related value."""
-        head, body, tail = identity.values()
+        head, neck, body, tail = identity.values()
         source = None if "source" not in value else value["source"]
-        new = f"<!-- NO USEABLE SOURCE FOR '{value['string']}{':' if body else ''}{body}' -->"
+        new = f"<!-- NO USEABLE SOURCE FOR '{value['string']}{neck}{body}' -->"
         err = f"Error: in file '{name}' identifier location marked '{new}'."
         if not body and isinstance(source, str):
             new = source
@@ -168,7 +174,7 @@ class Builder():
             new = str(getattr(self, source)[body])
         else:
             print(err)
-        return content.replace(head + body + tail, new)
+        return content.replace(head + neck + body + tail, new)
 
     def handle_variables(self, content, name, values, delims):
         """Returns content with any variables present identified and replaced."""
