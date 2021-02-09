@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.2.2
+# sprk v 1.2.3
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -11,7 +11,6 @@ import sys
 from pathlib import Path
 import shutil
 from itertools import count
-import types
 import os
 
 
