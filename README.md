@@ -13,6 +13,7 @@ Sprk is a versatile command line tool, similar in concept to the `argparse` modu
     - [Pools & ranks](#pools--ranks)
     - [Calls & items](#calls--items)
     - [Host tool use](#host-tool-use)
+    - [Content variables](#content-variables)
 - [Inserting templates](#inserting-templates)
    - [Template (template class)](#template-template-class)
 - [Runtime overview](#runtime-overview)
@@ -20,7 +21,7 @@ Sprk is a versatile command line tool, similar in concept to the `argparse` modu
 
 ## Getting started
 
-Sprk 1.2.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.3.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -264,7 +265,19 @@ In addition, when a task is run the resource instance passes itself to any `call
 
 Most notably, the tool has a `state` attribute which takes a dictionary. This can be supplemented or updated in the form of a dictionary returned by any resource instance's `call` function, allowing values to be stored and used in later tasks.
 
+### Content variables
+
 String values in the source file can be provided with top-level values from tool state dynamically by use of the state variable identifier `{STATE:key}`, where 'key' is the top-level key in the `state` attribute. The entire identifier is replaced with the given value if it exists or a failure message otherwise.
+
+Three other variables are defined for use in generating the help page and two of these - `BLANK` for an empty string and `USING` for the current tool - can be applied as is in other contexts.
+
+A new variable can be created by adding a corresponding dictionary to the `values` dictionary in the tool `vars` attribute. The `string` property is the value to be sought in the content and the `source` property can be either:
+
+- a string value with which the variable identifier is to be replaced;
+- a function, the return value of which is used to replace the variable identifier;
+- the key for a property of a top-level state value in which a string or a function for replacement can be found.
+
+The delimiters used in handling variables are set in the `delims` dictionary and can be changed as preferred.
 
 ## Inserting templates
 
@@ -313,12 +326,13 @@ This is a fairly complex example. Take a look at the option instance functions i
 ## Runtime overview
 
 1. All tools are instantiated, receive any instances of a resource or template class and are added to the `TOOLS` dictionary, with one assigned to the `ACTIVE_TOOL` constant.
-2. Any relevant command line arguments are passed to the active tool's `use` method, otherwise the `show_help` method is called.
-3. The tool's `do_work` method calls any `prep` functions.
-4. At the task execution stage, via the `run_tasks` method, the tool: matches each flag to an option instance, subject to the availability of any `call` function present; queues each option instance and any relevant process instances in instances of the tool internal Task class, each option instance with any relevant arguments; reorders these task instances to prioritize lead pools in lead attribute order and resource instances within pools by rank; for each task instance calls any `call` function present, or otherwise queues in an instance of the tool internal Batch class any `items` list present, to be built at the build stage.
-5. At the composition stage, via the `compose_items` method, the tool: queues any template instance where any list referenced by key in its `core` attribute contains one or more items; for each such template calls each function listed in `calls`. 
-6. At the build stage, via the `build_batches` method, the tool: for each batch instance and for each dictionary listed in `items` calls any `call` function present; creates any file or folder, descending through any nested items, and generates any names required; in the case of file content, prepares any insertion and replaces identifiers for any variables defined in the tool's `vars` attribute.
-7. The tool's `do_work` method calls any `tidy` functions.
+2. The name of the tool and any relevant command line arguments are passed to the active tool's `use` method, otherwise the `show_help` method is called.
+3. The tool adds its name to the `state` attribute for later reference.
+4. The tool's `do_work` method calls any `prep` functions.
+5. At the task execution stage, via the `run_tasks` method, the tool: matches each flag to an option instance, subject to the availability of any `call` function present; queues each option instance and any relevant process instances in instances of the tool internal Task class, each option instance with any relevant arguments; reorders these task instances to prioritize lead pools in lead attribute order and resource instances within pools by rank; for each task instance calls any `call` function present, or otherwise queues in an instance of the tool internal Batch class any `items` list present, to be built at the build stage.
+6. At the composition stage, via the `compose_items` method, the tool: queues any template instance where any list referenced by key in its `core` attribute contains one or more items; for each such template calls each function listed in `calls`. 
+7. At the build stage, via the `build_batches` method, the tool: for each batch instance and for each dictionary listed in `items` calls any `call` function present; creates any file or folder, descending through any nested items, and generates any names required; in the case of file content, prepares any insertion and replaces identifiers for any variables defined in the tool's `vars` attribute.
+9. The tool's `do_work` method calls any `tidy` functions.
 
 ## Development plan
 
