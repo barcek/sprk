@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.3.0
+# sprk v 1.4.0
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -10,6 +10,7 @@
 import sys
 from pathlib import Path
 import shutil
+from datetime import datetime
 from itertools import count
 import os
 
@@ -82,7 +83,10 @@ class Builder():
     def __init__(self, pars):
         self.vars = {
             "delims": {"opening": "{", "divider": ":", "closing": "}"},
-            "values": {"state": {"string": "STATE", "source": "state"}}
+            "values": {
+                "state": {"string": "STATE", "source": "state"},
+                "utils": {"string": "UTILS", "source": "utils"}
+            }
         }
         self.state = {
             "name": "project" if "name" not in pars else pars["name"],
@@ -90,6 +94,11 @@ class Builder():
             "code": CURRENT_DIR if "code" not in pars else Path(pars["code"]),
             "main": None if "main" not in pars else Path(pars["main"]),
             "nums": {}
+        }
+        self.utils = {
+            "date": lambda self: str(datetime.now().strftime("%d %B %Y")),
+            "time": lambda self: str(datetime.now().strftime("%H:%M:%S")),
+            "zone": lambda self: str(datetime.now().astimezone().strftime("%z"))
         }
         self.batches = [] if "batches" not in pars else pars["batches"]
 
@@ -681,7 +690,7 @@ ROOT_ITEMS = {
     "readme": [
         {
             "filename": "README.md",
-            "content": "# {STATE:name}"
+            "content": "# {STATE:name}\n\nCreated: {UTILS:date}"
         }
     ],
     "license": [
