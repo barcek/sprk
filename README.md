@@ -21,7 +21,7 @@ Sprk is a versatile command line tool, similar in concept to the `argparse` modu
 
 ## Getting started
 
-Sprk 1.3.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.4.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -267,7 +267,13 @@ Most notably, the tool has a `state` attribute which takes a dictionary. This ca
 
 ### Content variables
 
-String values in the source file can be provided with top-level values from tool state dynamically by use of the state variable identifier `{STATE:key}`, where 'key' is the top-level key in the `state` attribute. The entire identifier is replaced with the given value if it exists or a failure message otherwise.
+String values can be provided with substrings from elsewhere in the source file at runtime by use of content variable identifiers.
+
+Top-level values from tool state can be accessed by use of the state variable identifier `{STATE:key}`, where 'key' is the top-level key in the `state` attribute.
+
+Strings or functions placed on the 'utils' attribute can be accessed by use of the utils variable identifier `{UTILS:key}`, where key is the top-level key. Currently available are `date`, `time` and `zone`, the latter for UTC offset.
+
+In each case, the entire identifier is replaced with the given value if it exists or a failure message otherwise.
 
 Three other variables are defined for use in generating the help page and two of these - `BLANK` for an empty string and `USING` for the current tool - can be applied as is in other contexts.
 
