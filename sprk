@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.4.0
+# sprk v 1.4.1
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -9,8 +9,8 @@
 
 import sys
 from pathlib import Path
-import shutil
 from datetime import datetime
+import shutil
 from itertools import count
 import os
 
@@ -96,9 +96,9 @@ class Builder():
             "nums": {}
         }
         self.utils = {
-            "date": lambda self: str(datetime.now().strftime("%d %B %Y")),
-            "time": lambda self: str(datetime.now().strftime("%H:%M:%S")),
-            "zone": lambda self: str(datetime.now().astimezone().strftime("%z"))
+            "date": str(datetime.now().strftime("%d %B %Y")),
+            "time": str(datetime.now().strftime("%H:%M:%S")),
+            "zone": str(datetime.now().astimezone().strftime("%z"))
         }
         self.batches = [] if "batches" not in pars else pars["batches"]
 
@@ -181,12 +181,12 @@ class Builder():
         if not body and isinstance(source, str):
             string = source
         elif not body and callable(source):
-            string = source(self)
+            string = source(content, name)
         elif body and hasattr(self, source) and body in getattr(self, source):
             if isinstance(getattr(self, source)[body], str):
                 string = str(getattr(self, source)[body])
             elif callable(getattr(self, source)[body]):
-               string = getattr(self, source)[body](self)
+               string = getattr(self, source)[body](content, name)
         if string is None:
             string = notice
             print(error)
