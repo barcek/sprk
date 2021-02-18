@@ -21,7 +21,7 @@ Sprk is a versatile command line tool, similar in concept to the `argparse` modu
 
 ## Getting started
 
-Sprk 1.4.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.4.1 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -282,6 +282,11 @@ A new variable can be created by adding a corresponding dictionary to the `value
 - a string value with which the variable identifier is to be replaced;
 - a function, the return value of which is used to replace the variable identifier;
 - the key for a property of a top-level state value in which a string or a function for replacement can be found.
+
+A function given as a `source` property is passed two arguments:
+
+- the `content` string value in which the variable identifier is present as the first parameter;
+- the corresponding `name` string value as the second parameter.
 
 The delimiters used in handling variables are set in the `delims` dictionary and can be changed as preferred.
 
