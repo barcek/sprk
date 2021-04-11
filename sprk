@@ -181,12 +181,12 @@ class Builder():
         if not body and isinstance(source, str):
             string = source
         elif not body and callable(source):
-            string = source(content, name)
+            string = source(self, content, name)
         elif body and hasattr(self, source) and body in getattr(self, source):
             if isinstance(getattr(self, source)[body], str):
                 string = str(getattr(self, source)[body])
             elif callable(getattr(self, source)[body]):
-               string = getattr(self, source)[body](content, name)
+               string = getattr(self, source)[body](self, content, name)
         if string is None:
             string = notice
             print(error)
@@ -360,11 +360,11 @@ class Runner(Composer):
         self.vars["values"] = {**self.vars["values"], **{
             "aln_h": {
                 "string": "ALN_H",
-                "source": lambda tool: None if "help" not in tool.state
+                "source": lambda tool, content, name: None if "help" not in tool.state
                     else tool.align_substring(tool.state["help"])
             },
-            "blank": {"string": "BLANK", "source": lambda tool: ""},
-            "using": {"string": "USING", "source": lambda tool: tool.state["tool"]}
+            "blank": {"string": "BLANK", "source": lambda tool, content, name: ""},
+            "using": {"string": "USING", "source": lambda tool, content, name: tool.state["tool"]}
         }}
         self.state = {**self.state, **{
             "caps": [
@@ -1015,6 +1015,7 @@ if len(sys.argv) > 1:
         sys.argv
     )
 elif "show_help" in dir(Runner):
-    Runner.show_help(Resource({
-        "tool": ACTIVE_TOOL
-    }), None)
+    ACTIVE_TOOL.use(
+        [key for key, value in TOOLS.items() if value == ACTIVE_TOOL][0],
+        [sys.argv[0], "-h"]
+    )
