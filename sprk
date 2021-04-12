@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.4.3
+# sprk v 1.4.4
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -12,6 +12,7 @@ from pathlib import Path
 from datetime import datetime
 import shutil
 from itertools import count
+from typing import Union
 import os
 
 
@@ -24,13 +25,14 @@ PATH_TO_SELF = Path(sys.argv[0]).resolve()
 PATH_TO_SPRKFILE = CURRENT_DIR / SPRKFILENAME
 
 TOOLS = {}
+TEST_VALUES = {}
 
 
 # template class (Template)
 
 class Template():
 
-    def __init__(self, pars):
+    def __init__(self, pars: dict) -> None:
         self.name = self.tool.name_element("item") if "name" not in pars else pars["name"]
         self.core = ["parts"] if "core" not in pars else pars["core"]
         self.form = {
@@ -43,14 +45,14 @@ class Template():
 
 class Resource():
 
-    def __init__(self, pars):
+    def __init__(self, pars: dict) -> None:
         self.tool = None if "tool" not in pars else pars["tool"]
         self.info = None if "info" not in pars else pars["info"]
 
 
 class Process(Resource):
 
-    def __init__(self, pars):
+    def __init__(self, pars: dict) -> None:
         super(Process, self).__init__(pars)
         self.pool = None if "pool" not in pars else pars["pool"]
         self.rank = 1 if "rank" not in pars else pars["rank"]
@@ -60,7 +62,7 @@ class Process(Resource):
 
 class Option(Process):
 
-    def __init__(self, pars):
+    def __init__(self, pars: dict) -> None:
         super(Option, self).__init__(pars)
         self.desc = "" if "desc" not in pars else pars["desc"]
         self.word = "" if "word" not in pars else pars["word"]
@@ -80,7 +82,7 @@ class Option(Process):
 
 class Builder():
 
-    def __init__(self, pars):
+    def __init__(self, pars: dict) -> None:
         self.vars = {
             "delims": {"opening": "{", "divider": ":", "closing": "}"},
             "values": {
@@ -100,26 +102,34 @@ class Builder():
             "time": str(datetime.now().strftime("%H:%M:%S")),
             "zone": str(datetime.now().astimezone().strftime("%z"))
         }
+        self._test = TEST_VALUES
         self.batches = [] if "batches" not in pars else pars["batches"]
 
     class Batch():
 
-        def __init__(self, pars):
+        def __init__(self, pars: dict) -> None:
             self.dir = CURRENT_DIR if "dir" not in pars else pars["dir"]
             self.items = [] if "items" not in pars else pars["items"]
 
-    def update_state(self, new_state={}):
-        """Updates the state attribute with any new state."""
+    def update_state(self, new_state: dict = {}) -> None:
+        """Updates the state attribute with any new state.
+        >>> S.update_state({"_test_key": "test_value"}) == None\
+                and S.state['_test_key'] == 'test_value'
+        True
+        """
         self.state = {**self.state, **new_state}
 
-    def name_element(self, type="item"):
-        """Returns a name using a type string and generated sequential number."""
+    def name_element(self, type: str = "item") -> str:
+        """Returns a name using a type string and generated sequential number.
+        >>> S.name_element("test_str") # doctest: +ELLIPSIS
+        'new_test_str_...'
+        """
         if type not in self.state["nums"]:
             self.state["nums"][type] = count(start=1, step=1)
         return f'new_{type}_{next(self.state["nums"][type])}'
 
     @staticmethod
-    def read_file(filename):
+    def read_file(filename: Union[str, Path]) -> str:
         """Returns any content read from a file for a given filename."""
         content = None
         try:
@@ -130,7 +140,8 @@ class Builder():
             print(err)
         return content
 
-    def write_file(self, path=None, content="", flag="a", messages=None):
+    def write_file(self, path: Union[str, Path] = None, content: str = "",
+            flag: str = "a", messages: dict = None) -> None:
         """Writes any content to a file, calling to create any filename needed."""
         path = path or self.name_element("file")
         messages = messages or {
@@ -147,8 +158,12 @@ class Builder():
             print(messages["failure"])
             print(err)
 
-    def build_identifier(self, value, delims):
-        """Returns an object of substrings for all or part of an identifier."""
+    def build_identifier(self, value: dict, delims: dict) -> dict:
+        """Returns an object of substrings for all or part of an identifier.
+        >>> S.build_identifier(S._test["vars"]["values"]["test"],\
+                S._test["vars"]["delims"]) == S._test["identifier"]
+        True
+        """
         opening, divider, closing = delims.values()
         return {
             "head": opening + value["string"],
@@ -158,8 +173,12 @@ class Builder():
             "base": opening + value["string"] + closing
         }
 
-    def identify_variable(self, content, identifier):
-        """Seeks an identifier and returns None or the identifier updated."""
+    def identify_variable(self, content: str, identifier: dict) -> dict:
+        """Seeks an identifier and returns None or the identifier updated.
+        >>> S.identify_variable("test_substr ${TEST:test_key}",\
+                S._test["identifier"]) == S._test["identity"]
+        True
+        """
         start = content.find(identifier["head"])
         if start == -1:
             return None
@@ -171,8 +190,12 @@ class Builder():
             identifier["neck"] = ""
         return identifier
 
-    def replace_identifier(self, content, name, value, identity):
-        """Returns content with an identifier replaced by a sourced string."""
+    def replace_identifier(self, content: str, name: str, value: dict, identity: dict) -> str:
+        """Returns content with an identifier replaced by a sourced string.
+        >>> S.replace_identifier("test_substr {TEST:test_key}", "test_name",\
+                S._test["vars"]["values"]["test"], S._test["identity"])
+        'test_substr test_value'
+        """
         head, neck, body, tail, base = identity.values()
         source = None if "source" not in value else value["source"]
         string = None
@@ -192,8 +215,12 @@ class Builder():
             print(error)
         return content.replace(head + neck + body + tail, string)
 
-    def handle_variables(self, content, name, values, delims):
-        """Returns content with any variables present identified and replaced."""
+    def handle_variables(self, content: str, name: str, values: dict, delims: dict) -> str:
+        """Returns content with any variables present identified and replaced.
+        >>> S.handle_variables("test_substr {TEST:test_key}", "test_name",\
+                S._test["vars"]["values"], S._test["vars"]["delims"])
+        'test_substr test_value'
+        """
         for key in list(values.keys()):
             value = values[key]
             while True:
@@ -205,12 +232,15 @@ class Builder():
         return content
 
     @staticmethod
-    def indent_content(spaces=4, string=""):
-        """Returns a string with a number of spaces added after each newline."""
+    def indent_content(spaces: int = 4, string: str = "") -> str:
+        """Returns a string with a number of spaces added after each newline.
+        >>> S.indent_content(2, "test_line_1\\ntest_line_2")
+        'test_line_1\\n  test_line_2'
+        """
         return string.replace("\n", "\n" + " " * spaces)
 
-    def insert_content(self, current, content, anchor={"index": -1},
-            delims={"opening": "", "closing": ""}, indent=0, **kargs):
+    def insert_content(self, current: str, content: str, anchor: dict = {"index": -1},
+            delims: dict = {"opening": "", "closing": ""}, indent: int = 0, **kargs) -> str:
         """Returns content with additional lines combined, indented and inserted."""
         content = self.indent_content(indent, delims["opening"] + content)
         if "string" in anchor:
@@ -224,8 +254,8 @@ class Builder():
         return current[:start + length] + content + delims["closing"]\
              + current[start + length + 1:]
 
-    def create_file(self, dir=CURRENT_DIR, filename=None, content="",
-            input={"flag": "a"}):
+    def create_file(self, dir: Union[str, Path] = CURRENT_DIR, filename: str = None,
+            content: str = "", input: dict = {"flag": "a"}) -> bool:
         """Creates a file if not present, then calls to modify and write any text."""
         name = filename or self.name_element("file")
         path, newline = dir / name, "\n"
@@ -252,7 +282,8 @@ class Builder():
             self.write_file(path, content, input["flag"])
         return True
 
-    def create_folder(self, dir=CURRENT_DIR, dirname=None, items=None):
+    def create_folder(self, dir: Union[str, Path] = CURRENT_DIR,
+            dirname: str = None, items: list = None) -> bool:
         """Creates a folder if not present, then calls to build any items."""
         name = dirname or self.name_element("folder")
         path = dir / name
@@ -270,7 +301,7 @@ class Builder():
             self.create_items(items, path)
         return True
 
-    def create_items(self, items=[], dir=CURRENT_DIR):
+    def create_items(self, items: list = [], dir: Union[str, Path] = CURRENT_DIR) -> None:
         """Builds a file and folder structure, making any call first per item."""
         for item in items:
             if "call" in item:
@@ -287,14 +318,18 @@ class Builder():
                     None if "items" not in item else item["items"] or None
                 )
 
-    def queue_items(self, dir=CURRENT_DIR, items=[]):
-        """Combines and queues as a batch a directory and a set of items."""
+    def queue_items(self, dir: Union[str, Path] = CURRENT_DIR, items: list = []) -> None:
+        """Combines and queues as a batch a directory and a set of items.
+        >>> S.queue_items("test_dir", ["test_str"]) == None\
+                and S.batches[-1].dir == 'test_dir' and S.batches[-1].items == ['test_str']
+        True
+        """
         self.batches.append(self.Batch({
             "dir": dir,
             "items": items
         }))
 
-    def build_batches(self):
+    def build_batches(self) -> None:
         """Splits each batch in the batches attribute and calls to build."""
         if self.batches:
             print("Building batches...")
@@ -1007,6 +1042,7 @@ TOOLS["adapter"].provide_resources([
 
 ACTIVE_TOOL = TOOLS["combined"]
 
+
 # use of ACTIVE_TOOL, passing tool name & relevant arguments
 
 args = [sys.argv[0]] + (sys.argv[1:] if len(sys.argv) > 1 else ["-h"])
@@ -1015,3 +1051,20 @@ ACTIVE_TOOL.use(
     [key for key, value in TOOLS.items() if value == ACTIVE_TOOL][0],
     args
 )
+
+
+# docstring testing
+
+import doctest
+
+TEST_VALUES = {
+    "vars": {
+        "delims": {"opening": "{", "divider": ":", "closing": "}"},
+        "values": {"test": {"string": "TEST", "source": "_test"}},
+    },
+    "identifier": {"head": "{TEST", "neck": ":", "body": "", "tail": "}", "base": "{TEST}"},
+    "identity": {"head": "{TEST", "neck": ":", "body": "test_key", "tail": "}", "base": "{TEST}"},
+    "test_key": "test_value"
+}
+
+doctest.testmod(extraglobs={"S": Sprker({})}, verbose=False)
