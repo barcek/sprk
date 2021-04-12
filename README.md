@@ -21,7 +21,7 @@ Sprk is a versatile command line tool, similar in concept to the `argparse` modu
 
 ## Getting started
 
-Sprk 1.4.1 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.4.4 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -356,7 +356,9 @@ The following are possible next steps in the development of the code base. The g
 - enable viewing of snippets stored in source file variables
 - enable assignment of snippets to source file variables from the command line or a file, possibly by line number or identifier
 - enable extraction of configuration, template insertions and resource provisions to extension file for sharing
-- add docstring-embedded tests using `doctest` or fuller tests with `unittest`
+- annotate remaining functions
+- continue inclusion of interactive examples for testing with `doctest`
+- add fuller testing with `unittest`
 - reduce method time and space complexity where possible
 - revise to more closely conform to PEP 8
 - refactor as more Pythonic
