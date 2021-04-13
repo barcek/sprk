@@ -21,7 +21,7 @@ Sprk is a versatile command line tool, similar in concept to the `argparse` modu
 
 ## Getting started
 
-Sprk 1.4.4 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.4.5 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -213,9 +213,9 @@ Instances can also be given an `items` list of dictionaries defining folders and
 
 The `input` dictionary can take a `flag` key with the string value 'w' to write the `content` value over any existing file with the given name, 'a' (the default value) to append the content or 'i' to insert it. In the case of insertion, the `input` dictionary can take the following additional keys:
 
-- an `indent` key with an integer value for number of spaces of indentation (default 4);
-- an `anchor` key for the insertion point with a dictionary containing a `string` key with the string value after which to insert, or an `index` key for an integer value (the default, with -1, i.e. the final character) at which to insert;
-- a `delims` key with a dictionary containing an `opening` key with the string value (default '\n') to be inserted ahead of the content and/or a `closing` key with the string value (default '') to be inserted after it.
+- an `indent` key with an integer value for number of spaces of indentation (default 0);
+- an `anchor` key for the insertion point, with a dictionary containing a `string` key with the string value after which to insert or an `index` key for an integer value being the index at which to insert (default `None`);
+- a `delims` key, with a dictionary containing an `opening` key with the string value to be inserted ahead of the new content and a `closing` key with the string value to be inserted after it (in each case the default being an empty string).
 
 If a resource instance has no `call` attribute but has an `items` attribute, the `items` value is passed to an instance of the tool internal Batch class and queued to be built (see [Runtime overview](#runtime-overview) below).
 
@@ -341,7 +341,7 @@ This is a fairly complex example. Take a look at the option instance functions i
 3. The tool adds its name to the `state` attribute for later reference.
 4. The tool's `do_work` method calls any `prep` functions.
 5. At the task execution stage, via the `run_tasks` method, the tool: matches each flag to an option instance, subject to the availability of any `call` function present; queues each option instance and any relevant process instances in instances of the tool internal Task class, each option instance with any relevant arguments; reorders these task instances to prioritize lead pools in lead attribute order and resource instances within pools by rank; for each task instance calls any `call` function present, or otherwise queues in an instance of the tool internal Batch class any `items` list present, to be built at the build stage.
-6. At the composition stage, via the `compose_items` method, the tool: queues any template instance where any list referenced by key in its `core` attribute contains one or more items; for each such template calls each function listed in `calls`. 
+6. At the composition stage, via the `compose_items` method, the tool: queues any template instance where any list referenced by key in its `core` attribute contains one or more items; for each such template calls each function listed in `calls`.
 7. At the build stage, via the `build_batches` method, the tool: for each batch instance and for each dictionary listed in `items` calls any `call` function present; creates any file or folder, descending through any nested items, and generates any names required; in the case of file content, prepares any insertion and replaces identifiers for any variables defined in the tool's `vars` attribute.
 9. The tool's `do_work` method calls any `tidy` functions.
 
