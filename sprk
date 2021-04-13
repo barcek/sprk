@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.4.5
+# sprk v 1.4.6
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -241,7 +241,12 @@ class Builder():
 
     def insert_content(self, current: str, content: str, anchor: dict = None,
             delims: dict = {"opening": "", "closing": ""}, indent: int = 0, **kargs) -> str:
-        """Returns content with additional lines combined, indented and inserted."""
+        """Returns content with additional lines combined, indented and inserted.
+        >>> S.insert_content("test_substr_1\\n    test_substr_2",\
+                "test_substr_3\\ntest_substr_4", {"string": "test_substr_1"},\
+                {"opening": "\\n", "closing": ""}, 4)
+        'test_substr_1\\n    test_substr_3\\n    test_substr_4\\n    test_substr_2'
+        """
         content = self.indent_content(indent, delims["opening"] + content)
         if anchor == None:
             return current + content + delims["closing"]
