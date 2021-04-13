@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.4.6
+# sprk v 1.4.7
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -113,8 +113,8 @@ class Builder():
 
     def update_state(self, new_state: dict = {}) -> None:
         """Updates the state attribute with any new state.
-        >>> S.update_state({"_test_key": "test_value"}) == None\
-                and S.state['_test_key'] == 'test_value'
+        >>> S.update_state({"test_key": "test_value"}) == None\
+                and S.state['test_key'] == 'test_value'
         True
         """
         self.state = {**self.state, **new_state}
@@ -130,11 +130,16 @@ class Builder():
 
     @staticmethod
     def read_file(filename: Union[str, Path]) -> str:
-        """Returns any content read from a file for a given filename."""
+        """Returns any content read from a file for a given filename.
+        >>> with NamedTemporaryFile() as f:
+        ...     f.write(b"test_str") and f.flush()
+        ...     S.read_file(f.name)
+        'test_str'
+        """
         content = None
         try:
-            with open(filename, 'r') as f:
-                content = f.read()
+            with open(filename, 'rb') as f:
+                content = f.read().decode()
         except Exception as err:
             print(f"Error: content not read from file '{filename}'.")
             print(err)
@@ -142,7 +147,14 @@ class Builder():
 
     def write_file(self, path: Union[str, Path] = None, content: str = "",
             flag: str = "a", messages: dict = None) -> None:
-        """Writes any content to a file, calling to create any filename needed."""
+        """Writes any content to a file, calling to create any filename needed.
+        >>> with NamedTemporaryFile() as f:
+        ...     S.write_file(f.name, "test_str", "w",\
+                    {"success": "Wrote test string", "failure": ""})
+        ...     f.read().decode()
+        Wrote test string
+        'test_str'
+        """
         path = path or self.name_element("file")
         messages = messages or {
             "success": f"{'Wrote' if flag == 'w' else 'Added'}"
@@ -232,9 +244,9 @@ class Builder():
         return content
 
     @staticmethod
-    def indent_content(spaces: int = 4, string: str = "") -> str:
+    def indent_content(string: str = "", spaces: int = 4) -> str:
         """Returns a string with a number of spaces added after each newline.
-        >>> S.indent_content(2, "test_line_1\\ntest_line_2")
+        >>> S.indent_content("test_line_1\\ntest_line_2", 2)
         'test_line_1\\n  test_line_2'
         """
         return string.replace("\n", "\n" + " " * spaces)
@@ -247,7 +259,7 @@ class Builder():
                 {"opening": "\\n", "closing": ""}, 4)
         'test_substr_1\\n    test_substr_3\\n    test_substr_4\\n    test_substr_2'
         """
-        content = self.indent_content(indent, delims["opening"] + content)
+        content = self.indent_content(delims["opening"] + content, indent)
         if anchor == None:
             return current + content + delims["closing"]
         if "string" in anchor:
@@ -263,7 +275,13 @@ class Builder():
 
     def create_file(self, dir: Union[str, Path] = CURRENT_DIR, filename: str = None,
             content: str = "", input: dict = {"flag": "a"}) -> bool:
-        """Creates a file if not present, then calls to modify and write any text."""
+        """Creates a file if not present, then calls to modify and write any text.
+        >>> with NamedTemporaryFile() as f: # doctest: +ELLIPSIS
+        ...     S.create_file(Path(""), f.name, "test_str", {"flag": "w"})
+        Created file ...
+        Wrote 8 characters to file ...
+        True
+        """
         name = filename or self.name_element("file")
         path, newline = dir / name, "\n"
         if path not in dir.iterdir():
@@ -291,7 +309,14 @@ class Builder():
 
     def create_folder(self, dir: Union[str, Path] = CURRENT_DIR,
             dirname: str = None, items: list = None) -> bool:
-        """Creates a folder if not present, then calls to build any items."""
+        """Creates a folder if not present, then calls to build any items.
+        >>> with TemporaryDirectory() as d: # doctest: +ELLIPSIS
+        ...     S.create_folder(Path(d), "test_dir")
+        ...     "test_dir" in os.listdir(d)
+        Created folder ...
+        True
+        True
+        """
         name = dirname or self.name_element("folder")
         path = dir / name
         try:
@@ -309,7 +334,14 @@ class Builder():
         return True
 
     def create_items(self, items: list = [], dir: Union[str, Path] = CURRENT_DIR) -> None:
-        """Builds a file and folder structure, making any call first per item."""
+        """Builds a file and folder structure, making any call first per item.
+        >>> with TemporaryDirectory() as d: # doctest: +ELLIPSIS
+        ...     S.create_items(S._test["items"], Path(d))
+        ...     "test_file" in os.listdir(Path(d) / "test_dir")
+        Created folder ...
+        Created file ...
+        True
+        """
         for item in items:
             if "call" in item:
                 item["call"](dir)
@@ -337,7 +369,16 @@ class Builder():
         }))
 
     def build_batches(self) -> None:
-        """Splits each batch in the batches attribute and calls to build."""
+        """Splits each batch in the batches attribute and calls to build.
+        >>> with TemporaryDirectory() as d: # doctest: +ELLIPSIS
+        ...     S.batches.append(S.Batch({"dir": Path(d),"items": S._test["items"]}))
+        ...     S.build_batches()
+        ...     "test_file" in os.listdir(Path(d) / "test_dir")
+        Building batches...
+        Created folder ...
+        Created file ...
+        True
+        """
         if self.batches:
             print("Building batches...")
         for batch in self.batches:
@@ -1063,6 +1104,7 @@ ACTIVE_TOOL.use(
 # docstring testing
 
 import doctest
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 TEST_VALUES = {
     "vars": {
@@ -1071,7 +1113,17 @@ TEST_VALUES = {
     },
     "identifier": {"head": "{TEST", "neck": ":", "body": "", "tail": "}", "base": "{TEST}"},
     "identity": {"head": "{TEST", "neck": ":", "body": "test_key", "tail": "}", "base": "{TEST}"},
-    "test_key": "test_value"
+    "test_key": "test_value",
+    "items": [
+        {
+            "dirname": "test_dir",
+            "items": [
+                {
+                    "filename": "test_file"
+                }
+            ]
+        }
+    ]
 }
 
 doctest.testmod(extraglobs={"S": Sprker({})}, verbose=False)
