@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.4.7
+# sprk v 1.4.8
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -387,19 +387,28 @@ class Builder():
 
 class Composer(Builder):
 
-    def __init__(self, pars):
+    def __init__(self, pars: dict) -> None:
         super(Composer, self).__init__(pars)
         self.templates = {}
         self.items = []
 
-    def insert_templates(self, templates):
-        """Adds self to each template, then adds each to the state attribute."""
+    def insert_templates(self, templates: list) -> None:
+        """Adds self to each template, then adds each to the templates attribute.
+        >>> S.insert_templates([Template({"name": "test_name"})]) == None\
+                and S.templates["test_name"].tool == S
+        True
+        """
         for template in templates:
             template.tool = self
             self.templates.update({template.name: template})
 
-    def modify_template(self, name, content={}):
-        """Appends elements to a list or dict in a template form attribute."""
+    def modify_template(self, name: str, content: dict = {}) -> None:
+        """Appends elements to a list or dict in a template form attribute.
+        >>> S.templates.update({"test_name": S._test["template"]}) == None\
+                and S.modify_template("test_name", {"test_list_1": ["test_item_2"]}) == None\
+                and S.templates["test_name"].form["test_list_1"][-1] == "test_item_2"
+        True
+        """
         template = self.templates[name]
         for key in content:
             if key == "core":
@@ -412,12 +421,20 @@ class Composer(Builder):
                 template.form[key].update(content[key])
 
     @staticmethod
-    def dedupe_list(items):
-        """Returns a list with any duplicate items removed."""
+    def dedupe_list(items: list) -> list:
+        """Returns a list with any duplicate items removed.
+        >>> S.dedupe_list([1, "test_str", S._test["template"],\
+                1, "test_str", S._test["template"]]) == [1, "test_str", S._test["template"]]
+        True
+        """
         return list(dict.fromkeys(items))
 
-    def queue_modified(self):
-        """Returns each template in which a key listed as core has 1+ entries."""
+    def queue_modified(self) -> list:
+        """Returns each template in which a key listed as core has 1+ entries.
+        >>> S.templates.update({"test_name": S._test["template"]}) == None\
+                and S.queue_modified() == [S._test["template"]]
+        True
+        """
         templates = []
         for name in self.templates:
             templates.extend([
@@ -426,8 +443,13 @@ class Composer(Builder):
             ])
         return self.dedupe_list(templates)
 
-    def compose_items(self):
-        """Prepares items based on templates, then for each makes any calls."""
+    def compose_items(self) -> None:
+        """Prepares items based on templates, then for each makes any calls.
+        >>> S.templates.update({"test_name": S._test["template"]}) == None\
+                and S.compose_items()
+        Composing items...
+        test_str
+        """
         self.items = self.queue_modified()
         if self.items:
             print("Composing items...")
@@ -1123,7 +1145,16 @@ TEST_VALUES = {
                 }
             ]
         }
-    ]
+    ],
+    "template": Template({
+        "name": "test_name",
+        "core": ["test_list_1", "test_list_2"],
+        "form": {
+            "test_list_1": ["test_item_1"],
+            "test_list_2": ["test_item_1"],
+            "calls": [lambda tool: print("test_str")]
+        }
+    })
 }
 
 doctest.testmod(extraglobs={"S": Sprker({})}, verbose=False)
