@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.4.8
+# sprk v 1.4.9
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -406,7 +406,7 @@ class Composer(Builder):
         """Appends elements to a list or dict in a template form attribute.
         >>> S.templates.update({"test_name": S._test["template"]}) == None\
                 and S.modify_template("test_name", {"test_list_1": ["test_item_2"]}) == None\
-                and S.templates["test_name"].form["test_list_1"][-1] == "test_item_2"
+                and S.templates["test_name"].form["test_list_1"].pop() == "test_item_2"
         True
         """
         template = self.templates[name]
@@ -420,15 +420,6 @@ class Composer(Builder):
             elif key in template.form and isinstance(template.form[key], dict):
                 template.form[key].update(content[key])
 
-    @staticmethod
-    def dedupe_list(items: list) -> list:
-        """Returns a list with any duplicate items removed.
-        >>> S.dedupe_list([1, "test_str", S._test["template"],\
-                1, "test_str", S._test["template"]]) == [1, "test_str", S._test["template"]]
-        True
-        """
-        return list(dict.fromkeys(items))
-
     def queue_modified(self) -> list:
         """Returns each template in which a key listed as core has 1+ entries.
         >>> S.templates.update({"test_name": S._test["template"]}) == None\
@@ -437,11 +428,11 @@ class Composer(Builder):
         """
         templates = []
         for name in self.templates:
-            templates.extend([
-                self.templates[name] for item in self.templates[name].core
-                if self.templates[name].form[item]
-            ])
-        return self.dedupe_list(templates)
+            for item in self.templates[name].core:
+                if self.templates[name].form[item]:
+                    templates.append(self.templates[name])
+                    break
+        return templates
 
     def compose_items(self) -> None:
         """Prepares items based on templates, then for each makes any calls.
@@ -782,7 +773,7 @@ def create_ignores(self):
                 entries.extend(self.form[type])
         items.append({
             "filename": file["name"],
-            "content": "\n".join(self.tool.dedupe_list(entries))
+            "content": "\n".join(list(dict.fromkeys(entries)))
         })
     self.tool.queue_items(self.tool.state["root"], items)
 
