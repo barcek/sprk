@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v1.4.10
+# sprk v1.4.11
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -834,8 +834,13 @@ def initialize_git(self, pars=[]):
     })
 
 def open_browser_tab(url):
-    webbrowser.open_new_tab(url)
-    print(f"Requested {url}.")
+    """Attempts to open a new default browser tab displaying a given URL."""
+    try:
+        webbrowser.open_new_tab(url)
+        print(f"Requested a browser tab displaying {url}.")
+    except Exception as err:
+        print(f"Error: may not have opened a browser tab displaying {url}.")
+        print(err)
 
 
 # 'combined' template instances
