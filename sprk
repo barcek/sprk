@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.4.9
+# sprk v1.4.10
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -835,6 +835,7 @@ def initialize_git(self, pars=[]):
 
 def open_browser_tab(url):
     webbrowser.open_new_tab(url)
+    print(f"Requested {url}.")
 
 
 # 'combined' template instances
