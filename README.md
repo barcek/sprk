@@ -1,9 +1,13 @@
 # sprk
 
-Sprk is a versatile command line tool, similar in concept to the `argparse` module in the Python standard library. It's intended as a template for a customized command set, to be extended and adapted by the user from any directory and to any degree as circumstances and needs change. It does everything by default with a single source file.
+Sprk is a versatile command line tool, tool template and sample tool set.
+
+Similar in concept to the `argparse` module in the Python standard library, it's intended as a basis for customized command sets, to be extended and adapted by the user from any directory and to any degree as circumstances and needs change.
+
+It does everything by default with a single source file.
 
 - [Getting started](#getting-started)
-    - [The basic tools](#the-basic-tools)
+    - [The sample tools](#the-sample-tools)
     - [Additional sprks](#additional-sprks)
 - [Creating a tool](#creating-a-tool)
     - [Runner & Sprker (tool classes)](#runner--sprker-tool-classes)
@@ -21,7 +25,7 @@ Sprk is a versatile command line tool, similar in concept to the `argparse` modu
 
 ## Getting started
 
-Sprk 1.4.5 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.4.12 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -35,19 +39,15 @@ sprk -h
 
 On the help page you'll see that the command `sprk -B` or `sprk --backup` calls a copy of source code to the current directory, as a so-called sprkfile, with the default name 'Sprkfile'. Changes can be made to the code and the changed file copied over the existing sprk source file with the command `sprk -U` or `sprk --update`.
 
-### The basic tools
+### The sample tools
 
-The source code in this repository provides three simple command line tools:
+The source code in this repository provides three sample command line tools:
 
-- 'creator';
-- 'adapter';
-- 'combined', which includes the specific options from each of the others.
+- **creator**, with options to create a project folder, initialize Git, create root files and a 'public' directory, open a browser tab pointing to a list of possible licenses and start a local static file server, plus the base sprk options;
+- **adapter**, with options to open browser tabs pointing to this repository and the Python3 documentation, plus the base sprk options;
+- **combined**, the default tool, which includes the options specific to each of the other two, plus the base sprk options.
 
-It also provides the underlying logic for tools of far greater scope and complexity.
-
-The three are offered as examples for reference and a starting point for other uses.
-
-The 'combined' tool is the default active tool.
+The three are offered as examples for reference and a starting point for other uses. The wider code provides the underlying logic for tools of far greater scope and complexity.
 
 It is possible to switch among the available tools with the command `sprk -S` or `sprk --switch` followed by the preferred tool name. Using either of these commands without a tool name will confirm the tool currently being used and list all tools available.
 
