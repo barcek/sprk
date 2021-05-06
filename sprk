@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v1.4.12
+# sprk v 1.5.0
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -473,6 +473,7 @@ class Runner(Composer):
         self.lead = [] if "lead" not in pars else pars["lead"]
         self.work = {
             "prep": [] if "prep" not in pars else pars["prep"],
+            "wait": [] if "wait" not in pars else pars["wait"],
             "tidy": [] if "tidy" not in pars else pars["tidy"]
         }
 
@@ -650,6 +651,7 @@ class Runner(Composer):
         self.run_tasks(argv)
         self.compose_items()
         self.build_batches()
+        self.do_work("wait")
         self.do_work("tidy")
 
 
@@ -759,19 +761,6 @@ import webbrowser
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 
-# 'combined' request handler class
-
-PUBLIC = './public'
-
-class StaticHandler(SimpleHTTPRequestHandler):
-
-    def do_GET(self):
-        self.directory = PUBLIC
-        return SimpleHTTPRequestHandler.do_GET(self)
-
-localStaticHandler = StaticHandler
-
-
 # 'combined' template functions, receiving template instance as 'self'
 
 def create_ignores(self):
@@ -871,20 +860,38 @@ def open_browser_tab(url):
         print(f"Error: may not have opened a browser tab displaying {url}.")
         print(err)
 
-def serve_web_assets(self, pars=[]):
-    """Attempts to serve files from a 'public' directory at localhost:8080."""
-    HOST = "localhost"
-    PORT = 8080
-    try:
-        with HTTPServer((HOST, PORT), localStaticHandler) as server:
-            open_browser_tab(f"{HOST}:{PORT}")
-            print(f"Starting the server: '{PUBLIC}' to {HOST}:{PORT}.")
-            server.serve_forever()
-    except KeyboardInterrupt:
-        print("\nServer stopped.")
-    except Exception as err:
-        print("Error: may not have started server.")
-        print(err)
+def get_file_server(root, host, port):
+    """Returns a function to serve files from a given root to a given URL."""
+
+    class StaticHandler(SimpleHTTPRequestHandler):
+
+        def do_GET(self):
+            self.directory = root
+            return SimpleHTTPRequestHandler.do_GET(self)
+
+    staticHandler = StaticHandler
+
+    def serve_files():
+        try:
+            with HTTPServer((host, port), staticHandler) as server:
+                open_browser_tab(f"{host}:{port}")
+                print(f"Starting the server: '{root}' to {host}:{port}.")
+                server.serve_forever()
+        except KeyboardInterrupt:
+            print("\nServer stopped.")
+        except Exception as err:
+            print("Error: may not have started server.")
+            print(err)
+
+    return serve_files
+
+def serve_public_local(self, pars=[]):
+    """Passes arguments to 'get_file_server' and adds to 'wait' work queue."""
+    root = './public'
+    host = "localhost"
+    port = 8080
+    serve_public_localhost_8080 = get_file_server(root, host, port)
+    self.tool.work["wait"].append(serve_public_localhost_8080)
 
 
 # 'combined' template instances
@@ -955,7 +962,7 @@ SERVE = {
     "desc": "serve public folder contents at localhost ('-b')",
     "word": "serve",
     "char": "v",
-    "call": serve_web_assets
+    "call": serve_public_local
 }
 
 SPRK = {
