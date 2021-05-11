@@ -25,7 +25,7 @@ It does everything by default with a single source file.
 
 ## Getting started
 
-Sprk 1.5.1 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.6.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -65,15 +65,15 @@ A configuration dictionary containing certain initial values can be passed when 
 
 ```python
 tool_1 = Sprker({
-    "prep": [lambda: print("Starting...")],
+    "prep": [lambda self: print("Starting...")],
     "lead": ["project"],
-    "tidy": [lambda: print("Finished.")]
+    "tidy": [lambda self: print("Finished.")]
 })
 ```
 
 The values in this case are:
 
-- one lambda to be run before the standard tasks (`prep`) and one after every other stage (`tidy`);
+- one lambda to be run before the standard tasks (`prep`) and one before the program ends (`tidy`), each receiving the tool instance;
 - the name of the 'project' pool as a `lead` pool, those which are given priority over other pools, meaning its tasks will be run before tasks in any pools listed later or not listed (see [Pools & ranks](#pools--ranks)) below.
 
 Other possible keys are `name` for the project name string value, `root`, `code` and `main` for path string values (passed when assigned to `pathlib.Path`), `batches` for instances of the tool internal Batch class containing items to be built (see [Runtime overview](#runtime-overview) below) and `wait` for functions to be run before those in `tidy`, intended for blocking processes dependent on tasks or built items.
@@ -339,12 +339,12 @@ This is a fairly complex example. Take a look at the option instance functions i
 1. All tools are instantiated, receive any instances of a resource or template class and are added to the `TOOLS` dictionary, with one assigned to the `ACTIVE_TOOL` constant.
 2. The name of the tool and any relevant command line arguments are passed to the active tool's `use` method, otherwise the `show_help` method is called.
 3. The tool adds its name to the `state` attribute for later reference.
-4. The tool's `do_work` method calls any `prep` functions.
+4. The tool's `do_work` method calls any `prep` functions, passing the tool instance to each.
 5. At the task execution stage, via the `run_tasks` method, the tool: matches each flag to an option instance, subject to the availability of any `call` function present; queues each option instance and any relevant process instances in instances of the tool internal Task class, each option instance with any relevant arguments; reorders these task instances to prioritize lead pools in lead attribute order and resource instances within pools by rank; for each task instance calls any `call` function present, or otherwise queues in an instance of the tool internal Batch class any `items` list present, to be built at the build stage.
 6. At the composition stage, via the `compose_items` method, the tool: queues any template instance where any list referenced by key in its `core` attribute contains one or more items; for each such template calls each function listed in `calls`.
 7. At the build stage, via the `build_batches` method, the tool: for each batch instance and for each dictionary listed in `items` calls any `call` function present; creates any file or folder, descending through any nested items, and generates any names required; in the case of file content, prepares any insertion and replaces identifiers for any variables defined in the tool's `vars` attribute.
-9. The tool's `do_work` method calls any `wait` functions.
-10. The tool's `do_work` method calls any `tidy` functions.
+9. The tool's `do_work` method calls any `wait` functions, passing the tool instance to each.
+10. The tool's `do_work` method calls any `tidy` functions, passing the tool instance to each.
 
 ## Development plan
 
