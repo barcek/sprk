@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.5.1
+# sprk v 1.6.0
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -625,7 +625,7 @@ class Runner(Composer):
         """Calls each function listed for the given type in the work attribute."""
         if self.work[type]:
             for call in self.work[type]:
-                call()
+                call(self)
 
     def run_tasks(self, argv):
         """Prepares tasks, then for each makes any call, else queues any items."""
@@ -871,7 +871,7 @@ def get_file_server(root, host, port):
 
     staticHandler = StaticHandler
 
-    def serve_files():
+    def serve_files(self):
         try:
             with HTTPServer((host, port), staticHandler) as server:
                 open_browser_tab(f"{host}:{port}")
@@ -986,9 +986,9 @@ PYTHON = {
 
 TOOLS.update({
     "combined": Sprker({
-        "prep": [lambda: print("Starting...")],
+        "prep": [lambda self: print("Starting...")],
         "lead": ["project"],  # order of priority for any pools
-        "tidy": [lambda: print("Finished.")]
+        "tidy": [lambda self: print("Finished.")]
     })
 })
 
@@ -1064,9 +1064,9 @@ TOOLS["combined"].provide_resources([
 
 TOOLS.update({
     "creator": Sprker({
-        "prep": [lambda: print("Starting...")],
+        "prep": [lambda self: print("Starting...")],
         "lead": ["project"],  # order of priority for any pools
-        "tidy": [lambda: print("Finished.")]
+        "tidy": [lambda self: print("Finished.")]
     })
 })
 
@@ -1136,8 +1136,8 @@ TOOLS["creator"].provide_resources([
 
 TOOLS.update({
     "adapter": Sprker({
-        "prep": [lambda: print("Starting...")],
-        "tidy": [lambda: print("Finished.")]
+        "prep": [lambda self: print("Starting...")],
+        "tidy": [lambda self: print("Finished.")]
     })
 })
 
