@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.6.0
+# sprk v 1.6.1
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -12,7 +12,7 @@ from pathlib import Path
 from datetime import datetime
 import shutil
 from itertools import count
-from typing import Union
+from typing import cast, Union
 import os
 
 
@@ -24,8 +24,8 @@ SPRKFILENAME = "Sprkfile"
 PATH_TO_SELF = Path(sys.argv[0]).resolve()
 PATH_TO_SPRKFILE = CURRENT_DIR / SPRKFILENAME
 
-TOOLS = {}
-TEST_VALUES = {}
+TOOLS: dict = {}
+TEST_VALUES: dict = {}
 
 
 # template class (Template)
@@ -33,7 +33,7 @@ TEST_VALUES = {}
 class Template():
 
     def __init__(self, pars: dict) -> None:
-        self.name = self.tool.name_element("item") if "name" not in pars else pars["name"]
+        self.name = self.tool.name_element("item") if "name" not in pars else pars["name"] # type: ignore[attr-defined]
         self.core = ["parts"] if "core" not in pars else pars["core"]
         self.form = {
             "parts": [] if "parts" not in pars else pars["parts"],
@@ -143,7 +143,7 @@ class Builder():
         except Exception as err:
             print(f"Error: content not read from file '{filename}'.")
             print(err)
-        return content
+        return "" if content is None else content
 
     def write_file(self, path: Union[str, Path] = None, content: str = "",
             flag: str = "a", messages: dict = None) -> None:
@@ -185,7 +185,7 @@ class Builder():
             "base": opening + value["string"] + closing
         }
 
-    def identify_variable(self, content: str, identifier: dict) -> dict:
+    def identify_variable(self, content: str, identifier: dict) -> Union[dict, None]:
         """Seeks an identifier and returns None or the identifier updated.
         >>> S.identify_variable("test_substr ${TEST:test_key}",\
                 S._test["identifier"]) == S._test["identity"]
@@ -209,7 +209,7 @@ class Builder():
         'test_substr test_value'
         """
         head, neck, body, tail, base = identity.values()
-        source = None if "source" not in value else value["source"]
+        source = "" if "source" not in value else value["source"]
         string = None
         notice = f"<!-- NO USEABLE SOURCE FOR '{value['string']}{neck}{body}' -->"
         error = f"Error: identifier location in '{name}' marked '{notice}'."
@@ -262,18 +262,18 @@ class Builder():
         content = self.indent_content(delims["opening"] + content, indent)
         if anchor == None:
             return current + content + delims["closing"]
-        if "string" in anchor:
+        if anchor is not None and "string" in anchor:
             start, length = current.find(anchor["string"]), len(anchor["string"])
             if start == -1:
                 return current
-        if "index" in anchor:
+        if anchor is not None and "index" in anchor:
             start, length = anchor["index"], 0
             if start >= len(current):
                 return current
         return current[:start + length] + content + delims["closing"]\
              + current[start + length:]
 
-    def create_file(self, dir: Union[str, Path] = CURRENT_DIR, filename: str = None,
+    def create_file(self, dir: Path = CURRENT_DIR, filename: str = "",
             content: str = "", input: dict = {"flag": "a"}) -> bool:
         """Creates a file if not present, then calls to modify and write any text.
         >>> with NamedTemporaryFile() as f: # doctest: +ELLIPSIS
@@ -303,11 +303,11 @@ class Builder():
                 content = current
                 input["flag"] = "w"
             content = self.handle_variables(content, name,
-                self.vars["values"], self.vars["delims"])
+                cast(dict, self.vars["values"]), cast(dict, self.vars["delims"]))
             self.write_file(path, content, input["flag"])
         return True
 
-    def create_folder(self, dir: Union[str, Path] = CURRENT_DIR,
+    def create_folder(self, dir: Path = CURRENT_DIR,
             dirname: str = None, items: list = None) -> bool:
         """Creates a folder if not present, then calls to build any items.
         >>> with TemporaryDirectory() as d: # doctest: +ELLIPSIS
@@ -333,7 +333,7 @@ class Builder():
             self.create_items(items, path)
         return True
 
-    def create_items(self, items: list = [], dir: Union[str, Path] = CURRENT_DIR) -> None:
+    def create_items(self, items: list = [], dir: Path = CURRENT_DIR) -> None:
         """Builds a file and folder structure, making any call first per item.
         >>> with TemporaryDirectory() as d: # doctest: +ELLIPSIS
         ...     S.create_items(S._test["items"], Path(d))
@@ -357,7 +357,7 @@ class Builder():
                     None if "items" not in item else item["items"] or None
                 )
 
-    def queue_items(self, dir: Union[str, Path] = CURRENT_DIR, items: list = []) -> None:
+    def queue_items(self, dir: Path = CURRENT_DIR, items: list = []) -> None:
         """Combines and queues as a batch a directory and a set of items.
         >>> S.queue_items("test_dir", ["test_str"]) == None\
                 and S.batches[-1].dir == 'test_dir' and S.batches[-1].items == ['test_str']
@@ -389,8 +389,8 @@ class Composer(Builder):
 
     def __init__(self, pars: dict) -> None:
         super(Composer, self).__init__(pars)
-        self.templates = {}
-        self.items = []
+        self.templates: dict = {}
+        self.items: list = []
 
     def insert_templates(self, templates: list) -> None:
         """Adds self to each template, then adds each to the templates attribute.
