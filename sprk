@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.6.2
+# sprk v 1.6.3
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -13,6 +13,7 @@ from datetime import datetime
 import shutil
 from itertools import count
 from typing import cast, Union
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 import os
 
 
@@ -113,16 +114,16 @@ class Builder():
 
     def update_state(self, new_state: dict = {}) -> None:
         """Updates the state attribute with any new state.
-        >>> S.update_state({"test_key": "test_value"}) == None\
-                and S.state['test_key'] == 'test_value'
+        >>> S.update_state({"t_key": "t_value"}) == None\
+                and S.state['t_key'] == 't_value'
         True
         """
         self.state = {**self.state, **new_state}
 
     def name_element(self, type: str = "item") -> str:
         """Returns a name using a type string and generated sequential number.
-        >>> S.name_element("test_str") # doctest: +ELLIPSIS
-        'new_test_str_...'
+        >>> S.name_element("t_str") # doctest: +ELLIPSIS
+        'new_t_str_...'
         """
         if type not in self.state["nums"]:
             self.state["nums"][type] = count(start=1, step=1)
@@ -132,9 +133,9 @@ class Builder():
     def read_file(filename: Union[str, Path]) -> str:
         """Returns any content read from a file for a given filename.
         >>> with NamedTemporaryFile() as f:
-        ...     f.write(b"test_str") and f.flush()
+        ...     f.write(b"t_str") and f.flush()
         ...     S.read_file(f.name)
-        'test_str'
+        't_str'
         """
         content = None
         try:
@@ -149,11 +150,11 @@ class Builder():
             flag: str = "a", messages: dict = None) -> None:
         """Writes any content to a file, calling to create any filename needed.
         >>> with NamedTemporaryFile() as f:
-        ...     S.write_file(f.name, "test_str", "w",\
+        ...     S.write_file(f.name, "t_str", "w",\
                     {"success": "Wrote test string", "failure": ""})
         ...     f.read().decode()
         Wrote test string
-        'test_str'
+        't_str'
         """
         path = path or self.name_element("file")
         messages = messages or {
@@ -172,8 +173,8 @@ class Builder():
 
     def build_identifier(self, value: dict, delims: dict) -> dict:
         """Returns an object of substrings for all or part of an identifier.
-        >>> S.build_identifier(S._test["vars"]["values"]["test"],\
-                S._test["vars"]["delims"]) == S._test["identifier"]
+        >>> S.build_identifier(S._test["t_vars"]["values"]["test"],\
+                S._test["t_vars"]["delims"]) == S._test["t_identifier"]
         True
         """
         opening, divider, closing = delims.values()
@@ -187,8 +188,8 @@ class Builder():
 
     def identify_variable(self, content: str, identifier: dict) -> Union[dict, None]:
         """Seeks an identifier and returns None or the identifier updated.
-        >>> S.identify_variable("test_substr ${TEST:test_key}",\
-                S._test["identifier"]) == S._test["identity"]
+        >>> S.identify_variable("t_substr ${TEST:t_key}",\
+                S._test["t_identifier"]) == S._test["t_identity"]
         True
         """
         start = content.find(identifier["head"])
@@ -204,9 +205,9 @@ class Builder():
 
     def replace_identifier(self, content: str, name: str, value: dict, identity: dict) -> str:
         """Returns content with an identifier replaced by a sourced string.
-        >>> S.replace_identifier("test_substr {TEST:test_key}", "test_name",\
-                S._test["vars"]["values"]["test"], S._test["identity"])
-        'test_substr test_value'
+        >>> S.replace_identifier("t_substr {TEST:t_key}", "t_name",\
+                S._test["t_vars"]["values"]["test"], S._test["t_identity"])
+        't_substr t_value'
         """
         head, neck, body, tail, base = identity.values()
         source = "" if "source" not in value else value["source"]
@@ -229,9 +230,9 @@ class Builder():
 
     def handle_variables(self, content: str, name: str, values: dict, delims: dict) -> str:
         """Returns content with any variables present identified and replaced.
-        >>> S.handle_variables("test_substr {TEST:test_key}", "test_name",\
-                S._test["vars"]["values"], S._test["vars"]["delims"])
-        'test_substr test_value'
+        >>> S.handle_variables("t_substr {TEST:t_key}", "t_name",\
+                S._test["t_vars"]["values"], S._test["t_vars"]["delims"])
+        't_substr t_value'
         """
         for key in list(values.keys()):
             value = values[key]
@@ -246,18 +247,18 @@ class Builder():
     @staticmethod
     def indent_content(string: str = "", spaces: int = 4) -> str:
         """Returns a string with a number of spaces added after each newline.
-        >>> S.indent_content("test_line_1\\ntest_line_2", 2)
-        'test_line_1\\n  test_line_2'
+        >>> S.indent_content("t_line_1\\nt_line_2", 2)
+        't_line_1\\n  t_line_2'
         """
         return string.replace("\n", "\n" + " " * spaces)
 
     def insert_content(self, current: str, content: str, anchor: dict = None,
             delims: dict = {"opening": "", "closing": ""}, indent: int = 0, **kargs) -> str:
         """Returns content with additional lines combined, indented and inserted.
-        >>> S.insert_content("test_substr_1\\n    test_substr_2",\
-                "test_substr_3\\ntest_substr_4", {"string": "test_substr_1"},\
+        >>> S.insert_content("t_substr_1\\n    t_substr_2",\
+                "t_substr_3\\nt_substr_4", {"string": "t_substr_1"},\
                 {"opening": "\\n", "closing": ""}, 4)
-        'test_substr_1\\n    test_substr_3\\n    test_substr_4\\n    test_substr_2'
+        't_substr_1\\n    t_substr_3\\n    t_substr_4\\n    t_substr_2'
         """
         content = self.indent_content(delims["opening"] + content, indent)
         if anchor == None:
@@ -277,9 +278,9 @@ class Builder():
             content: str = "", input: dict = {"flag": "a"}) -> bool:
         """Creates a file if not present, then calls to modify and write any text.
         >>> with NamedTemporaryFile() as f: # doctest: +ELLIPSIS
-        ...     S.create_file(Path(""), f.name, "test_str", {"flag": "w"})
+        ...     S.create_file(Path(""), f.name, "t_str", {"flag": "w"})
         Created file ...
-        Wrote 8 characters to file ...
+        Wrote 5 characters to file ...
         True
         """
         name = filename or self.name_element("file")
@@ -311,8 +312,8 @@ class Builder():
             dirname: str = None, items: list = None) -> bool:
         """Creates a folder if not present, then calls to build any items.
         >>> with TemporaryDirectory() as d: # doctest: +ELLIPSIS
-        ...     S.create_folder(Path(d), "test_dir")
-        ...     "test_dir" in os.listdir(d)
+        ...     S.create_folder(Path(d), "t_dir")
+        ...     "t_dir" in os.listdir(d)
         Created folder ...
         True
         True
@@ -336,8 +337,8 @@ class Builder():
     def create_items(self, items: list = [], dir: Path = CURRENT_DIR) -> None:
         """Builds a file and folder structure, making any call first per item.
         >>> with TemporaryDirectory() as d: # doctest: +ELLIPSIS
-        ...     S.create_items(S._test["items"], Path(d))
-        ...     "test_file" in os.listdir(Path(d) / "test_dir")
+        ...     S.create_items(S._test["t_items"], Path(d))
+        ...     "t_file" in os.listdir(Path(d) / "t_dir")
         Created folder ...
         Created file ...
         True
@@ -359,8 +360,8 @@ class Builder():
 
     def queue_items(self, dir: Path = CURRENT_DIR, items: list = []) -> None:
         """Combines and queues as a batch a directory and a set of items.
-        >>> S.queue_items("test_dir", ["test_str"]) == None\
-                and S.batches[-1].dir == 'test_dir' and S.batches[-1].items == ['test_str']
+        >>> S.queue_items("t_dir", ["t_str"]) == None\
+                and S.batches[-1].dir == 't_dir' and S.batches[-1].items == ['t_str']
         True
         """
         self.batches.append(self.Batch({
@@ -371,9 +372,9 @@ class Builder():
     def build_batches(self) -> None:
         """Splits each batch in the batches attribute and calls to build.
         >>> with TemporaryDirectory() as d: # doctest: +ELLIPSIS
-        ...     S.batches.append(S.Batch({"dir": Path(d),"items": S._test["items"]}))
+        ...     S.batches.append(S.Batch({"dir": Path(d),"items": S._test["t_items"]}))
         ...     S.build_batches()
-        ...     "test_file" in os.listdir(Path(d) / "test_dir")
+        ...     "t_file" in os.listdir(Path(d) / "t_dir")
         Building batches...
         Created folder ...
         Created file ...
@@ -394,8 +395,8 @@ class Composer(Builder):
 
     def insert_templates(self, templates: list) -> None:
         """Adds self to each template, then adds each to the templates attribute.
-        >>> S.insert_templates([Template({"name": "test_name"})]) == None\
-                and S.templates["test_name"].tool == S
+        >>> S.insert_templates([Template({"name": "t_name"})]) == None\
+                and S.templates["t_name"].tool == S
         True
         """
         for template in templates:
@@ -404,9 +405,9 @@ class Composer(Builder):
 
     def modify_template(self, name: str, content: dict = {}) -> None:
         """Appends elements to a list or dict in a template form attribute.
-        >>> S.templates.update({"test_name": S._test["template"]}) == None\
-                and S.modify_template("test_name", {"test_list_1": ["test_item_2"]}) == None\
-                and S.templates["test_name"].form["test_list_1"].pop() == "test_item_2"
+        >>> S.templates.update({"t_name": S._test["t_template"]}) == None\
+                and S.modify_template("t_name", {"t_list_1": ["t_item_2"]}) == None\
+                and S.templates["t_name"].form["t_list_1"].pop() == "t_item_2"
         True
         """
         template = self.templates[name]
@@ -422,8 +423,8 @@ class Composer(Builder):
 
     def queue_modified(self) -> list:
         """Returns each template in which a key listed as core has 1+ entries.
-        >>> S.templates.update({"test_name": S._test["template"]}) == None\
-                and S.queue_modified() == [S._test["template"]]
+        >>> S.templates.update({"t_name": S._test["t_template"]}) == None\
+                and S.queue_modified() == [S._test["t_template"]]
         True
         """
         templates = []
@@ -436,10 +437,10 @@ class Composer(Builder):
 
     def compose_items(self) -> None:
         """Prepares items based on templates, then for each makes any calls.
-        >>> S.templates.update({"test_name": S._test["template"]}) == None\
+        >>> S.templates.update({"t_name": S._test["t_template"]}) == None\
                 and S.compose_items()
         Composing items...
-        test_str
+        t_str
         """
         self.items = self.queue_modified()
         if self.items:
@@ -1193,38 +1194,20 @@ ACTIVE_TOOL.use(
 )
 
 
-# docstring testing
-
-import doctest
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+# verification of docstring interactive examples - optional
 
 TEST_VALUES = {
-    "vars": {
-        "delims": {"opening": "{", "divider": ":", "closing": "}"},
-        "values": {"test": {"string": "TEST", "source": "_test"}},
-    },
-    "identifier": {"head": "{TEST", "neck": ":", "body": "", "tail": "}", "base": "{TEST}"},
-    "identity": {"head": "{TEST", "neck": ":", "body": "test_key", "tail": "}", "base": "{TEST}"},
-    "test_key": "test_value",
-    "items": [
-        {
-            "dirname": "test_dir",
-            "items": [
-                {
-                    "filename": "test_file"
-                }
-            ]
-        }
-    ],
-    "template": Template({
-        "name": "test_name",
-        "core": ["test_list_1", "test_list_2"],
-        "form": {
-            "test_list_1": ["test_item_1"],
-            "test_list_2": ["test_item_1"],
-            "calls": [lambda tool: print("test_str")]
-        }
-    })
+    "t_vars": {"delims": {"opening": "{", "divider": ":", "closing": "}"}, "values": {"test": {"string": "TEST", "source": "_test"}},},
+    "t_identifier": {"head": "{TEST", "neck": ":", "body": "", "tail": "}", "base": "{TEST}"},
+    "t_identity": {"head": "{TEST", "neck": ":", "body": "t_key", "tail": "}", "base": "{TEST}"},
+    "t_key": "t_value",
+    "t_items": [{"dirname": "t_dir", "items": [{"filename": "t_file"}]}],
+    "t_template": Template({"name": "t_name", "core": ["t_list_1", "t_list_2"], "form": {"t_list_1": ["t_item_1"], "t_list_2": ["t_item_1"], "calls": [lambda tool: print("t_str")]}})
 }
 
-doctest.testmod(extraglobs={"S": Sprker({})}, verbose=False)
+def run_docstring_interactive_examples():
+    import doctest
+    print('Running docstring interactive examples...')
+    doctest.testmod(extraglobs={"S": Sprker({})}, verbose=False)
+
+# run_docstring_interactive_examples()
