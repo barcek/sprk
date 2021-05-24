@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.6.1
+# sprk v 1.6.2
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -887,7 +887,7 @@ def get_file_server(root, host, port):
 
 def serve_public_local(self, pars=[]):
     """Passes arguments to 'get_file_server' and adds to 'wait' work queue."""
-    root = pars[0] if pars else './public'
+    root = pars[0] if pars else str(self.tool.state["root"] / "public")
     host = "localhost"
     port = int(pars[1]) if len(pars) > 1 else 8080
     serve_public_localhost_8080 = get_file_server(root, host, port)
