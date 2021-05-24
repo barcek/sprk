@@ -21,11 +21,12 @@ It does everything by default with a single source file.
 - [Inserting templates](#inserting-templates)
    - [Template (template class)](#template-template-class)
 - [Runtime overview](#runtime-overview)
+- [Type checking](#type-checking)
 - [Development plan](#development-plan)
 
 ## Getting started
 
-Sprk 1.6.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.6.1 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -345,6 +346,16 @@ This is a fairly complex example. Take a look at the option instance functions i
 7. At the build stage, via the `build_batches` method, the tool: for each batch instance and for each dictionary listed in `items` calls any `call` function present; creates any file or folder, descending through any nested items, and generates any names required; in the case of file content, prepares any insertion and replaces identifiers for any variables defined in the tool's `vars` attribute.
 9. The tool's `do_work` method calls any `wait` functions, passing the tool instance to each.
 10. The tool's `do_work` method calls any `tidy` functions, passing the tool instance to each.
+
+## Type checking
+
+The sprk source code imports from the `typing` module in the Python standard library for type annotation and casting.
+
+Type checking for a modified Sprkfile can be performed using the Mypy package. Once installed, the following command can be run:
+
+```shell
+mypy Sprkfile
+```
 
 ## Development plan
 
