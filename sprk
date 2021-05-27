@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.6.3
+# sprk v 1.6.4
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -1205,9 +1205,10 @@ TEST_VALUES = {
     "t_template": Template({"name": "t_name", "core": ["t_list_1", "t_list_2"], "form": {"t_list_1": ["t_item_1"], "t_list_2": ["t_item_1"], "calls": [lambda tool: print("t_str")]}})
 }
 
-def run_docstring_interactive_examples():
+def run_docstring_interactive_examples(is_verbose=False):
+    "Runs examples with a test Sprker instance and non-verbose by default."
     import doctest
     print('Running docstring interactive examples...')
-    doctest.testmod(extraglobs={"S": Sprker({})}, verbose=False)
+    doctest.testmod(extraglobs={"S": Sprker({})}, verbose=is_verbose)
 
 # run_docstring_interactive_examples()
