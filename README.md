@@ -21,12 +21,14 @@ It does everything by default with a single source file.
 - [Inserting templates](#inserting-templates)
    - [Template (template class)](#template-template-class)
 - [Runtime overview](#runtime-overview)
-- [Type checking](#type-checking)
+- [Code verification](#code-verification)
+    - [Interactive examples](#interactive-examples)
+    - [Type annotation](#type-annotation)
 - [Development plan](#development-plan)
 
 ## Getting started
 
-Sprk 1.6.1 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.6.4 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -347,9 +349,27 @@ This is a fairly complex example. Take a look at the option instance functions i
 9. The tool's `do_work` method calls any `wait` functions, passing the tool instance to each.
 10. The tool's `do_work` method calls any `tidy` functions, passing the tool instance to each.
 
-## Type checking
+## Code verification
 
-The sprk source code imports from the `typing` module in the Python standard library for type annotation and casting.
+### Interactive examples
+
+The sprk source code includes docstrings with interactive examples verified using the `doctest` module in the Python standard library.
+
+The examples can be run by uncommenting the final line of the source code, to invoke the function `run_docstring_interactive_examples` when sprk itself is run.
+
+```python
+run_docstring_interactive_examples()
+```
+
+A summary is provided for each failure, with no summary indicating success. For a more verbose output, providing an overview even on success, pass `True`.
+
+```python
+run_docstring_interactive_examples(True)
+```
+
+### Type annotation
+
+The sprk source code also imports from the `typing` module in the Python standard library for type annotation and casting.
 
 Type checking for a modified Sprkfile can be performed using the Mypy package. Once installed, the following command can be run:
 
