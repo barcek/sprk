@@ -28,7 +28,7 @@ It does everything by default with a single source file.
 
 ## Getting started
 
-Sprk 1.6.4 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.6.5 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -47,7 +47,7 @@ On the help page you'll see that the command `sprk -B` or `sprk --backup` calls 
 The source code in this repository provides three sample command line tools:
 
 - **creator**, with options to create a project folder, initialize Git, create root files and a 'public' directory, open a browser tab pointing to a list of possible licenses and start a local static file server, plus the base sprk options;
-- **adapter**, with options to open browser tabs pointing to this repository and the Python3 documentation, plus the base sprk options;
+- **adapter**, with options to open browser tabs pointing to this repository and the Python3 documentation and run the docstring interactive examples in the source code, plus the base sprk options;
 - **combined**, the default tool, which includes the options specific to each of the other two, plus the base sprk options.
 
 The three are offered as examples for reference and a starting point for other uses. The wider code provides the underlying logic for tools of far greater scope and complexity.
@@ -366,6 +366,8 @@ A summary is provided for each failure, with no summary indicating success. For 
 ```python
 run_docstring_interactive_examples(True)
 ```
+
+The '-t' or '--test' option on both the **adapter** and **combined** sample tools will also run the examples in this way.
 
 ### Type annotation
 
