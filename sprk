@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.6.4
+# sprk v 1.6.5
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -721,6 +721,25 @@ class Sprker(Runner):
             print(err)
 
 
+# verification of docstring interactive examples - optional:
+# uncomment last line of file to do so with each use of sprk
+
+TEST_VALUES = {
+    "t_vars": {"delims": {"opening": "{", "divider": ":", "closing": "}"}, "values": {"test": {"string": "TEST", "source": "_test"}},},
+    "t_identifier": {"head": "{TEST", "neck": ":", "body": "", "tail": "}", "base": "{TEST}"},
+    "t_identity": {"head": "{TEST", "neck": ":", "body": "t_key", "tail": "}", "base": "{TEST}"},
+    "t_key": "t_value",
+    "t_items": [{"dirname": "t_dir", "items": [{"filename": "t_file"}]}],
+    "t_template": Template({"name": "t_name", "core": ["t_list_1", "t_list_2"], "form": {"t_list_1": ["t_item_1"], "t_list_2": ["t_item_1"], "calls": [lambda tool: print("t_str")]}})
+}
+
+def run_docstring_interactive_examples(is_verbose=False):
+    "Runs examples with a test Sprker instance and non-verbose by default."
+    import doctest
+    print('Running docstring interactive examples...')
+    doctest.testmod(extraglobs={"S": Sprker({})}, verbose=is_verbose)
+
+
 # resource instances
 
 BLANK = Resource({"info": "{BLANK}"})
@@ -894,6 +913,9 @@ def serve_public_local(self, pars=[]):
     serve_public_localhost_8080 = get_file_server(root, host, port)
     self.tool.work["wait"].append(serve_public_localhost_8080)
 
+def test_source_code(self, pars=[]):
+    run_docstring_interactive_examples(True)
+
 
 # 'combined' template instances
 
@@ -981,6 +1003,13 @@ PYTHON = {
     "call": lambda self, pars=[]: open_browser_tab("https://www.python.org/doc/")
 }
 
+TEST = {
+    "desc": "run the internal docstring interactive examples",
+    "word": "test",
+    "char": "t",
+    "call": test_source_code
+}
+
 
 # 'combined' tool class instantiation, passing configuration dictionary,
 # with assignment of instance to key in TOOLS dictionary
@@ -1040,6 +1069,7 @@ TOOLS["combined"].provide_resources([
 
     Option(SPRK),
     Option(PYTHON),
+    Option(TEST),
 
     BLANK,
 
@@ -1156,6 +1186,7 @@ TOOLS["adapter"].provide_resources([
 
     Option(SPRK),
     Option(PYTHON),
+    Option(TEST),
 
     BLANK,
 
@@ -1193,22 +1224,5 @@ ACTIVE_TOOL.use(
     args
 )
 
-
-# verification of docstring interactive examples - optional
-
-TEST_VALUES = {
-    "t_vars": {"delims": {"opening": "{", "divider": ":", "closing": "}"}, "values": {"test": {"string": "TEST", "source": "_test"}},},
-    "t_identifier": {"head": "{TEST", "neck": ":", "body": "", "tail": "}", "base": "{TEST}"},
-    "t_identity": {"head": "{TEST", "neck": ":", "body": "t_key", "tail": "}", "base": "{TEST}"},
-    "t_key": "t_value",
-    "t_items": [{"dirname": "t_dir", "items": [{"filename": "t_file"}]}],
-    "t_template": Template({"name": "t_name", "core": ["t_list_1", "t_list_2"], "form": {"t_list_1": ["t_item_1"], "t_list_2": ["t_item_1"], "calls": [lambda tool: print("t_str")]}})
-}
-
-def run_docstring_interactive_examples(is_verbose=False):
-    "Runs examples with a test Sprker instance and non-verbose by default."
-    import doctest
-    print('Running docstring interactive examples...')
-    doctest.testmod(extraglobs={"S": Sprker({})}, verbose=is_verbose)
 
 # run_docstring_interactive_examples()
