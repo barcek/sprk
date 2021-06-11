@@ -1,20 +1,29 @@
 #!/usr/bin/python3
 
-# sprk v 1.6.5
+# sprk v 1.6.6
 # ©2021 barcek
 # License: MIT
 # @ github.com
 # /barcek/sprk
 
 
-import sys
+# imports
+# for general use
+
 from pathlib import Path
+import sys
+import os
+
+# for tool features
+
 from datetime import datetime
-import shutil
 from itertools import count
+import shutil
+
+# for verification
+
 from typing import cast, Union
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-import os
 
 
 # base constants
