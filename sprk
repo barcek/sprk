@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.6.9
+# sprk v1.6.10
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -23,7 +23,7 @@ import shutil
 
 # for verification
 
-from typing import cast, Union, Callable
+from typing import cast, Union, Callable, Any
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 
@@ -535,14 +535,22 @@ class Runner(Composer):
             self.resources.append(resource)
 
     @staticmethod
-    def getattrs(host, objects, key):
-        """Returns the value corresponding to a key for each object in a list."""
+    def getattrs(host: Any, objects: str, key: str) -> list:
+        """
+        Returns the value corresponding to a key for each object in a list.
+        >>> S.getattrs(S._test["t_object"], "t_attr_list", "t_attr_int")
+        [1, 2]
+        """
         return [getattr(object, key) for object in getattr(host, objects)\
             if len(getattr(host, objects)) > 1 and getattr(object, key) is not None]
 
     @staticmethod
-    def create_alignment(lines, align_id, spaces=1):
-        """Returns offsets required to align a set of strings plus a count."""
+    def create_alignment(lines: list, align_id: str, spaces: int = 1) -> dict:
+        """
+        Returns offsets required to align a set of strings plus a count.
+        >>> S.create_alignment(["...{ALN_H}...", "......{ALN_H}..."], "{ALN_H}", 2)
+        {'offsets': ['     ', '  '], 'i': 0}
+        """
         lengths = [len(line[:line.find(align_id)]) for line in lines
             if line.find(align_id) != -1]
         offsets = list(map(lambda length: " " * (max(lengths) - length + spaces),
@@ -553,8 +561,12 @@ class Runner(Composer):
         }
 
     @staticmethod
-    def align_substring(alignment):
-        """Returns the offset for one string required to align a larger set."""
+    def align_substring(alignment: dict) -> str:
+        """
+        Returns the offset for one string required to align a larger set.
+        >>> S.align_substring({'offsets': ['     ', '  '], 'i': 0})
+        '     '
+        """
         i = alignment["i"]
         offset = alignment["offsets"][i]
         alignment["i"] = i + 1 if i < (len(alignment["offsets"]) - 1) else 0
@@ -776,13 +788,19 @@ class Sprker(Runner):
 # verification of docstring interactive examples - optional:
 # uncomment last line of file to do so with each use of sprk
 
+class TestClass():
+    def __init__(self, pars):
+        self.t_attr_int = 0 if "int" not in pars else pars["int"]
+        self.t_attr_list = [] if "items" not in pars else pars["items"]
+
 TEST_VALUES = {
     "t_vars": {"delims": {"opening": "{", "divider": ":", "closing": "}"}, "values": {"test": {"string": "TEST", "source": "_test"}},},
     "t_identifier": {"head": "{TEST", "neck": ":", "body": "", "tail": "}", "base": "{TEST}"},
     "t_identity": {"head": "{TEST", "neck": ":", "body": "t_key", "tail": "}", "base": "{TEST}"},
     "t_key": "t_value",
     "t_items": [{"dirname": "t_dir", "items": [{"filename": "t_file"}]}],
-    "t_template": Template({"name": "t_name", "core": ["t_list_1", "t_list_2"], "form": {"t_list_1": ["t_item_1"], "t_list_2": ["t_item_1"], "calls": [lambda tool: print("t_str")]}})
+    "t_template": Template({"name": "t_name", "core": ["t_list_1", "t_list_2"], "form": {"t_list_1": ["t_item_1"], "t_list_2": ["t_item_1"], "calls": [lambda tool: print("t_str")]}}),
+    "t_object": TestClass({"items": [TestClass({"int": 1}), TestClass({"int": 2})]})
 }
 
 def run_docstring_interactive_examples(is_verbose=False):
