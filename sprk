@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.6.8
+# sprk v 1.6.9
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -42,10 +42,11 @@ TEST_VALUES: dict = {}
 # utility functions
 
 def pipe(*fns: Callable) -> Callable:
-    """Returns a function invoking 'fns' in sequence left to right, the first
-       with the initial arguments, each thereafter with the last return value.
-       >>> pipe(lambda x, y, z: x + y + z, lambda x: x + 1)(1, 2, 3)
-       7
+    """
+    Returns a function invoking 'fns' in sequence left to right, the first
+    with the initial arguments, each thereafter with the last return value.
+    >>> pipe(lambda x, y, z: x + y + z, lambda x: x + 1)(1, 2, 3)
+    7
     """
     return lambda *value: reduce(
         lambda acc, fn: fn(acc),
@@ -138,7 +139,8 @@ class Builder():
             self.items = [] if "items" not in pars else pars["items"]
 
     def update_state(self, new_state: dict = {}) -> None:
-        """Updates the state attribute with any new state.
+        """
+        Updates the state attribute with any new state.
         >>> S.update_state({"t_key": "t_value"}) == None\
                 and S.state['t_key'] == 't_value'
         True
@@ -146,7 +148,8 @@ class Builder():
         self.state = {**self.state, **new_state}
 
     def name_element(self, type: str = "item") -> str:
-        """Returns a name using a type string and generated sequential number.
+        """
+        Returns a name using a type string and generated sequential number.
         >>> S.name_element("t_str") # doctest: +ELLIPSIS
         'new_t_str_...'
         """
@@ -156,7 +159,8 @@ class Builder():
 
     @staticmethod
     def read_file(filename: Union[str, Path]) -> str:
-        """Returns any content read from a file for a given filename.
+        """
+        Returns any content read from a file for a given filename.
         >>> with NamedTemporaryFile() as f:
         ...     f.write(b"t_str") and f.flush()
         ...     S.read_file(f.name)
@@ -173,7 +177,8 @@ class Builder():
 
     def write_file(self, path: Union[str, Path] = None, content: str = "",
             flag: str = "a", messages: dict = None) -> None:
-        """Writes any content to a file, calling to create any filename needed.
+        """
+        Writes any content to a file, calling to create any filename needed.
         >>> with NamedTemporaryFile() as f:
         ...     S.write_file(f.name, "t_str", "w",\
                     {"success": "Wrote test string", "failure": ""})
@@ -197,7 +202,8 @@ class Builder():
             print(err)
 
     def build_identifier(self, value: dict, delims: dict) -> dict:
-        """Returns an object of substrings for all or part of an identifier.
+        """
+        Returns an object of substrings for all or part of an identifier.
         >>> S.build_identifier(S._test["t_vars"]["values"]["test"],\
                 S._test["t_vars"]["delims"]) == S._test["t_identifier"]
         True
@@ -212,7 +218,8 @@ class Builder():
         }
 
     def identify_variable(self, content: str, identifier: dict) -> Union[dict, None]:
-        """Seeks an identifier and returns None or the identifier updated.
+        """
+        Seeks an identifier and returns None or the identifier updated.
         >>> S.identify_variable("t_substr ${TEST:t_key}",\
                 S._test["t_identifier"]) == S._test["t_identity"]
         True
@@ -229,7 +236,8 @@ class Builder():
         return identifier
 
     def replace_identifier(self, content: str, name: str, value: dict, identity: dict) -> str:
-        """Returns content with an identifier replaced by a sourced string.
+        """
+        Returns content with an identifier replaced by a sourced string.
         >>> S.replace_identifier("t_substr {TEST:t_key}", "t_name",\
                 S._test["t_vars"]["values"]["test"], S._test["t_identity"])
         't_substr t_value'
@@ -254,7 +262,8 @@ class Builder():
         return content.replace(head + neck + body + tail, string)
 
     def handle_variables(self, content: str, name: str, values: dict, delims: dict) -> str:
-        """Returns content with any variables present identified and replaced.
+        """
+        Returns content with any variables present identified and replaced.
         >>> S.handle_variables("t_substr {TEST:t_key}", "t_name",\
                 S._test["t_vars"]["values"], S._test["t_vars"]["delims"])
         't_substr t_value'
@@ -271,7 +280,8 @@ class Builder():
 
     @staticmethod
     def indent_content(string: str = "", spaces: int = 4) -> str:
-        """Returns a string with a number of spaces added after each newline.
+        """
+        Returns a string with a number of spaces added after each newline.
         >>> S.indent_content("t_line_1\\nt_line_2", 2)
         't_line_1\\n  t_line_2'
         """
@@ -279,7 +289,8 @@ class Builder():
 
     def insert_content(self, current: str, content: str, anchor: dict = None,
             delims: dict = {"opening": "", "closing": ""}, indent: int = 0, **kargs) -> str:
-        """Returns content with additional lines combined, indented and inserted.
+        """
+        Returns content with additional lines combined, indented and inserted.
         >>> S.insert_content("t_substr_1\\n    t_substr_2",\
                 "t_substr_3\\nt_substr_4", {"string": "t_substr_1"},\
                 {"opening": "\\n", "closing": ""}, 4)
@@ -301,7 +312,8 @@ class Builder():
 
     def create_file(self, dir: Path = CURRENT_DIR, filename: str = "",
             content: str = "", input: dict = {"flag": "a"}) -> bool:
-        """Creates a file if not present, then calls to modify and write any text.
+        """
+        Creates a file if not present, then calls to modify and write any text.
         >>> with NamedTemporaryFile() as f: # doctest: +ELLIPSIS
         ...     S.create_file(Path(""), f.name, "t_str", {"flag": "w"})
         Created file ...
@@ -335,7 +347,8 @@ class Builder():
 
     def create_folder(self, dir: Path = CURRENT_DIR,
             dirname: str = None, items: list = None) -> bool:
-        """Creates a folder if not present, then calls to build any items.
+        """
+        Creates a folder if not present, then calls to build any items.
         >>> with TemporaryDirectory() as d: # doctest: +ELLIPSIS
         ...     S.create_folder(Path(d), "t_dir")
         ...     "t_dir" in os.listdir(d)
@@ -360,7 +373,8 @@ class Builder():
         return True
 
     def create_items(self, items: list = [], dir: Path = CURRENT_DIR) -> None:
-        """Builds a file and folder structure, making any call first per item.
+        """
+        Builds a file and folder structure, making any call first per item.
         >>> with TemporaryDirectory() as d: # doctest: +ELLIPSIS
         ...     S.create_items(S._test["t_items"], Path(d))
         ...     "t_file" in os.listdir(Path(d) / "t_dir")
@@ -384,7 +398,8 @@ class Builder():
                 )
 
     def queue_items(self, dir: Path = CURRENT_DIR, items: list = []) -> None:
-        """Combines and queues as a batch a directory and a set of items.
+        """
+        Combines and queues as a batch a directory and a set of items.
         >>> S.queue_items("t_dir", ["t_str"]) == None\
                 and S.batches[-1].dir == 't_dir' and S.batches[-1].items == ['t_str']
         True
@@ -395,7 +410,8 @@ class Builder():
         }))
 
     def build_batches(self) -> None:
-        """Splits each batch in the batches attribute and calls to build.
+        """
+        Splits each batch in the batches attribute and calls to build.
         >>> with TemporaryDirectory() as d: # doctest: +ELLIPSIS
         ...     S.batches.append(S.Batch({"dir": Path(d),"items": S._test["t_items"]}))
         ...     S.build_batches()
@@ -419,7 +435,8 @@ class Composer(Builder):
         self.items: list = []
 
     def insert_templates(self, templates: list) -> None:
-        """Adds self to each template, then adds each to the templates attribute.
+        """
+        Adds self to each template, then adds each to the templates attribute.
         >>> S.insert_templates([Template({"name": "t_name"})]) == None\
                 and S.templates["t_name"].tool == S
         True
@@ -429,7 +446,8 @@ class Composer(Builder):
             self.templates.update({template.name: template})
 
     def modify_template(self, name: str, content: dict = {}) -> None:
-        """Appends elements to a list or dict in a template form attribute.
+        """
+        Appends elements to a list or dict in a template form attribute.
         >>> S.templates.update({"t_name": S._test["t_template"]}) == None\
                 and S.modify_template("t_name", {"t_list_1": ["t_item_2"]}) == None\
                 and S.templates["t_name"].form["t_list_1"].pop() == "t_item_2"
@@ -447,7 +465,8 @@ class Composer(Builder):
                 template.form[key].update(content[key])
 
     def queue_modified(self) -> list:
-        """Returns each template in which a key listed as core has 1+ entries.
+        """
+        Returns each template in which a key listed as core has 1+ entries.
         >>> S.templates.update({"t_name": S._test["t_template"]}) == None\
                 and S.queue_modified() == [S._test["t_template"]]
         True
@@ -461,7 +480,8 @@ class Composer(Builder):
         return templates
 
     def compose_items(self) -> None:
-        """Prepares items based on templates, then for each makes any calls.
+        """
+        Prepares items based on templates, then for each makes any calls.
         >>> S.templates.update({"t_name": S._test["t_template"]}) == None\
                 and S.compose_items()
         Composing items...
