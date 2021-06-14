@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.6.6
+# sprk v 1.6.7
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -505,7 +505,8 @@ class Runner(Composer):
         return [getattr(object, key) for object in getattr(host, objects)\
             if len(getattr(host, objects)) > 1 and getattr(object, key) is not None]
 
-    def create_alignment(self, lines, align_id, spaces=1):
+    @staticmethod
+    def create_alignment(lines, align_id, spaces=1):
         """Returns offsets required to align a set of strings plus a count."""
         lengths = [len(line[:line.find(align_id)]) for line in lines
             if line.find(align_id) != -1]
