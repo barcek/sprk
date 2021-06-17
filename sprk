@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.7.0
+# sprk v 1.7.1
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -129,7 +129,7 @@ class Builder():
             "time": str(datetime.now().strftime("%H:%M:%S")),
             "zone": str(datetime.now().astimezone().strftime("%z"))
         }
-        self._test = TEST_VALUES
+        self._test = {} if "_test" not in pars else pars["_test"]
         self.batches = [] if "batches" not in pars else pars["batches"]
 
     class Batch():
@@ -781,26 +781,29 @@ class Sprker(Runner):
 # verification of docstring interactive examples - optional:
 # uncomment last line of file to do so with each use of sprk
 
-class TestClass():
-    def __init__(self, pars):
-        self.t_attr_int = 0 if "int" not in pars else pars["int"]
-        self.t_attr_list = [] if "items" not in pars else pars["items"]
-
-TEST_VALUES = {
-    "t_vars": {"delims": {"opening": "{", "divider": ":", "closing": "}"}, "values": {"test": {"string": "TEST", "source": "_test"}},},
-    "t_identifier": {"head": "{TEST", "neck": ":", "body": "", "tail": "}", "base": "{TEST}"},
-    "t_identity": {"head": "{TEST", "neck": ":", "body": "t_key", "tail": "}", "base": "{TEST}"},
-    "t_key": "t_value",
-    "t_items": [{"dirname": "t_dir", "items": [{"filename": "t_file"}]}],
-    "t_template": Template({"name": "t_name", "core": ["t_list_1", "t_list_2"], "form": {"t_list_1": ["t_item_1"], "t_list_2": ["t_item_1"], "calls": [lambda tool: print("t_str")]}}),
-    "t_object": TestClass({"items": [TestClass({"int": 1}), TestClass({"int": 2})]})
-}
-
 def run_docstring_interactive_examples(is_verbose=False):
     "Runs examples with a test Sprker instance and non-verbose by default."
+
+    class TestClass():
+
+        def __init__(self, pars):
+            self.t_attr_int = 0 if "int" not in pars else pars["int"]
+            self.t_attr_list = [] if "items" not in pars else pars["items"]
+
+    TEST_VALUES = {
+        "t_vars": {"delims": {"opening": "{", "divider": ":", "closing": "}"}, "values": {"test": {"string": "TEST", "source": "_test"}},},
+        "t_identifier": {"head": "{TEST", "neck": ":", "body": "", "tail": "}", "base": "{TEST}"},
+        "t_identity": {"head": "{TEST", "neck": ":", "body": "t_key", "tail": "}", "base": "{TEST}"},
+        "t_key": "t_value",
+        "t_items": [{"dirname": "t_dir", "items": [{"filename": "t_file"}]}],
+        "t_template": Template({"name": "t_name", "core": ["t_list_1", "t_list_2"], "form": {"t_list_1": ["t_item_1"], "t_list_2": ["t_item_1"], "calls": [lambda tool: print("t_str")]}}),
+        "t_object": TestClass({"items": [TestClass({"int": 1}), TestClass({"int": 2})]})
+    }
+
     import doctest
+
     print('Running docstring interactive examples...')
-    doctest.testmod(extraglobs={"S": Sprker({})}, verbose=is_verbose)
+    doctest.testmod(extraglobs={"S": Sprker({"_test": TEST_VALUES})}, verbose=is_verbose)
 
 
 # resource instances
