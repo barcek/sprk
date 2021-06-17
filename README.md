@@ -28,7 +28,7 @@ It does everything by default with a single source file.
 
 ## Getting started
 
-Sprk 1.6.10 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.7.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -272,13 +272,24 @@ Most notably, the tool has a `state` attribute which takes a dictionary. This ca
 
 String values can be provided with substrings from elsewhere in the source file at runtime by use of content variable identifiers.
 
+#### Existing variables
+
 Top-level values from tool state can be accessed by use of the state variable identifier `{STATE:key}`, where 'key' is the top-level key in the `state` attribute.
 
 Strings or functions placed on the 'utils' attribute can be accessed by use of the utils variable identifier `{UTILS:key}`, where key is the top-level key. Currently available are `date`, `time` and `zone`, the latter for UTC offset.
 
 In each case, the entire identifier is replaced with the given value if it exists or a failure message otherwise.
 
-Three other variables are defined for use in generating the help page and two of these - `BLANK` for an empty string and `USING` for the current tool - can be applied as is in other contexts.
+Three other variables are defined for use in generating the help page. Two of these - `BLANK` for an empty string and `USING` for the current tool - can be applied as is in other contexts. The third - `ALIGN` - is used to align columns within a text by means of the following procedure:
+
+1. placing the identifier on each line of the text at the point at which a number of spaces of offset is required;
+2. passing the lines with identifier as a list of strings to the `get_offsets` static method on the `Runner` class, to get a list of integers each of which is the number of spaces of offset for the respective line;
+3. storing the list of integers on the `state` attribute with a name following the pattern '<name>_offsets', where '<name>' is an arbitrary string;
+4. calling the `handle_variables` method on the `Builder` class for each string with '<name>' as the second argument to replace the identifier.
+
+See the `show_help` method on the `Runner` class for the existing implementation.
+
+#### Creating variables
 
 A new variable can be created by adding a corresponding dictionary to the `values` dictionary in the tool `vars` attribute. The `string` property is the value to be sought in the content and the `source` property can be either:
 
@@ -290,6 +301,8 @@ A function given as a `source` property is passed two arguments:
 
 - the `content` string value in which the variable identifier is present as the first parameter;
 - the corresponding `name` string value as the second parameter.
+
+#### Variable delimiters
 
 The delimiters used in handling variables are set in the `delims` dictionary and can be changed as preferred.
 
