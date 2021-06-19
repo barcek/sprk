@@ -28,7 +28,7 @@ It does everything by default with a single source file.
 
 ## Getting started
 
-Sprk 1.7.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.7.2 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -62,9 +62,9 @@ If you'd like to use more than one version of the source file and avoid a new ve
 
 ## Creating a tool
 
-A tool can be created by creating an instance of either the `Runner` class or the `Sprker` class.
+A tool can be created by instantiating either the `Runner` class or the `Sprker` class.
 
-A configuration dictionary containing certain initial values can be passed when instantiating a tool, as below:
+A configuration dictionary containing certain initial values can be passed when doing so, as below:
 
 ```python
 tool_1 = Sprker({
@@ -79,7 +79,7 @@ The values in this case are:
 - one lambda to be run before the standard tasks (`prep`) and one before the program ends (`tidy`), each receiving the tool instance;
 - the name of the 'project' pool as a `lead` pool, those which are given priority over other pools, meaning its tasks will be run before tasks in any pools listed later or not listed (see [Pools & ranks](#pools--ranks)) below.
 
-Other possible keys are `name` for the project name string value, `root`, `code` and `main` for path string values (passed when assigned to `pathlib.Path`), `batches` for instances of the tool internal Batch class containing items to be built (see [Runtime overview](#runtime-overview) below) and `wait` for functions to be run before those in `tidy`, intended for blocking processes dependent on tasks or built items.
+Other possible keys are `name` for the project name string value, `root`, `code` and `main` for path string values (passed when assigned to `pathlib.Path`), `batches` for instances of the tool internal Batch class containing items to be built (see [Runtime overview](#runtime-overview) below), `caps` for a list of call cap dictionaries (see [Calls](#calls) below) and `wait` for functions to be run before those in `tidy`, intended for blocking processes dependent on tasks or built items.
 
 A tool can also be extended by providing resources and inserting templates (see [Providing resources](#providing-resources) and [Inserting templates](#inserting-templates) below).
 
@@ -202,7 +202,7 @@ A function given as a `call` value is passed two arguments:
 
 Passing the resource instance allows resource attributes to be used by the function, e.g. any `items` value, but also gives the function access to the host tool (see [next section](#host-tool-use)).
 
-The number of uses of a particular function can be capped under the `caps` key in the tool's `state` attribute.
+The number of uses of a particular function can be capped under the `caps` key in the tool's `state` attribute, with a call cap dictionary present for `show_help` by default. A list of additional call cap dictionaries can be included in the configuration dictionary when instantiating a tool (see [Creating a tool](#creating-a-tool) above).
 
 New or changed tool state can be returned from the function as a dictionary (see [Host tool use](#host-tool-use) below).
 
