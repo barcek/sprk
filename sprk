@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.7.2
+# sprk v 1.7.3
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -530,8 +530,14 @@ class Runner(Composer):
             self.process = Option({}) if "process" not in pars else pars["process"]
             self.args = [] if "args" not in pars else pars["args"]
 
-    def provide_resources(self, resources):
-        """Adds self to each resource instance, then each to the resources attribute."""
+    def provide_resources(self, resources: list) -> None:
+        """
+        Adds self to each resource instance, then each to the resources attribute.
+        >>> (S.provide_resources(S._test["t_resources"]) == None)\
+                and S.resources == S._test["t_resources"]\
+                and S.resources.pop().tool == S and S.resources.pop().tool == S
+        True
+        """
         for resource in resources:
             resource.tool = self
             self.resources.append(resource)
@@ -569,8 +575,14 @@ class Runner(Composer):
         return " " * offset
 
     @staticmethod
-    def show_help(self, pars=[]):
-        """Builds a help page using any resource instance info attributes."""
+    def show_help(self, pars: list = []) -> None:
+        """
+        Builds a help page using any resource instance info attributes.
+        >>> (S.resources.extend(S._test["t_resources"]) == None)\
+                and Runner.show_help(Option({"tool": S})) and S.resources.clear()
+         -d, --do    do sth
+         -e, --else  do sth else
+        """
         infos = [info for info in self.tool.getattrs(self.tool, "resources",
             "info") if info is not None]
         self.tool.state["help_offsets"] = self.tool.get_offsets(infos)
@@ -580,8 +592,14 @@ class Runner(Composer):
             if info is not None:
                 print(info)
 
-    def request_call(self, call):
-        """Returns true if a function can be called, adding a use if capped."""
+    def request_call(self, call: str) -> bool:
+        """
+        Returns True if a call can be made, adding a use if capped, else False.
+        >>> (S.state["caps"].extend(S._test["t_caps"]) == None)\
+                and S.request_call("t_fn") and S.request_call("t_fn")\
+                and (S.request_call("t_fn") == False) and S.state["caps"].pop()
+        {'name': 't_fn', 'poss': 2, 'used': 2}
+        """
         for entry in self.state["caps"]:
             if not "used" in entry:
                 entry["used"] = 0
@@ -793,7 +811,9 @@ def run_docstring_interactive_examples(is_verbose=False):
         "t_key": "t_value",
         "t_items": [{"dirname": "t_dir", "items": [{"filename": "t_file"}]}],
         "t_template": Template({"name": "t_name", "core": ["t_list_1", "t_list_2"], "form": {"t_list_1": ["t_item_1"], "t_list_2": ["t_item_1"], "calls": [lambda tool: print("t_str")]}}),
-        "t_object": TestClass({"items": [TestClass({"int": 1}), TestClass({"int": 2})]})
+        "t_object": TestClass({"items": [TestClass({"int": 1}), TestClass({"int": 2})]}),
+        "t_resources": [Option({"desc": "do sth", "word": "do", "char": "d"}), Option({"desc": "do sth else", "word": "else", "char": "e"})],
+        "t_caps": [{"name": "t_fn", "poss": 2}]
     }
 
     import doctest
