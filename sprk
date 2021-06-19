@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.7.1
+# sprk v 1.7.2
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -510,7 +510,9 @@ class Runner(Composer):
         }}
         self.state = {**self.state, **{
             "caps": [
-                {"name": "show_help", "poss": 1, "used": 0}
+                {"name": "show_help", "poss": 1}
+            ] if "caps" not in pars else [
+                {"name": "show_help", "poss": 1}, *pars["caps"]
             ]
         }}
         self.resources = []
@@ -578,17 +580,11 @@ class Runner(Composer):
             if info is not None:
                 print(info)
 
-    def set_call_cap(self, call, poss=1):
-        """Sets in state a maximum number of uses for a resource instance call."""
-        caps = self.state["caps"]
-        caps.append({
-            "name": call.__name__, "poss": poss, "used": 0
-        })
-        self.update_state({"caps": caps})
-
     def request_call(self, call):
         """Returns true if a function can be called, adding a use if capped."""
         for entry in self.state["caps"]:
+            if not "used" in entry:
+                entry["used"] = 0
             if entry["name"] == call and entry["used"] < entry["poss"]:
                 entry["used"] += 1
             elif entry["name"] == call and entry["used"] >= entry["poss"]:
