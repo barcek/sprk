@@ -9,6 +9,7 @@ It does everything by default with a single source file.
 - [Getting started](#getting-started)
     - [The sample tools](#the-sample-tools)
     - [Additional sprks](#additional-sprks)
+    - [As a dependency](#as-a-dependency)
 - [Creating a tool](#creating-a-tool)
     - [Runner & Sprker (tool classes)](#runner--sprker-tool-classes)
     - [Task (tool internal class)](#task-tool-internal-class)
@@ -28,7 +29,7 @@ It does everything by default with a single source file.
 
 ## Getting started
 
-Sprk 1.7.2 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.8.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -59,6 +60,14 @@ It may be best to take a look at the source file and experiment with the options
 ### Additional sprks
 
 If you'd like to use more than one version of the source file and avoid a new version's sprkfile being overwritten in error, you can change the value of its `SPRKFILENAME` constant.
+
+### As a dependency
+
+The sprk source code can be made available for use in another file by adding the `.py` filename extension to the source file.
+
+If the importing file and source file are in the same directory, it can then be imported using `import sprk`. If the source file is in a folder in the same directory, this becomes `import <name>.sprk`, with '<name>' being the folder name.
+
+Once imported, the classes, function definitions and variables in the source file are available in the importing file under their usual identifiers prefixed with the identifier in the `import` statement. For example, if `import sprk` is used, `TOOLS` is available under `sprk.TOOLS`.
 
 ## Creating a tool
 
