@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.7.3
+# sprk v 1.8.0
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -1299,12 +1299,14 @@ ACTIVE_TOOL = TOOLS["combined"]
 
 # use of ACTIVE_TOOL, passing tool name & relevant arguments
 
-args = [sys.argv[0]] + (sys.argv[1:] if len(sys.argv) > 1 else ["-h"])
+if __name__ == "__main__":
 
-ACTIVE_TOOL.use(
-    [key for key, value in TOOLS.items() if value == ACTIVE_TOOL][0],
-    args
-)
+    args = [sys.argv[0]] + (sys.argv[1:] if len(sys.argv) > 1 else ["-h"])
+
+    ACTIVE_TOOL.use(
+        [key for key, value in TOOLS.items() if value == ACTIVE_TOOL][0],
+        args
+    )
 
 
 # run_docstring_interactive_examples()
