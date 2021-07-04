@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.8.0
+# sprk v 1.8.1
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -886,12 +886,17 @@ def create_ignores(self):
 # 'combined' resource constants,
 # e.g. strings & lists of dictionaries for resource 'items' attribute
 
+README_MD = """\
+# {STATE:name}
+
+Created: {UTILS:date}"""
+
 ROOT_ITEMS = {
 
     "readme": [
         {
             "filename": "README.md",
-            "content": "# {STATE:name}\n\nCreated: {UTILS:date}"
+            "content": README_MD
         }
     ],
     "license": [
@@ -901,6 +906,19 @@ ROOT_ITEMS = {
     ]
 }
 
+INDEX_HTML = """\
+<!DOCTYPE html>
+<html lang=\"en\">
+    <head>
+        <meta charset=\"utf-8\"/>
+        <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"/>
+        <title>{STATE:name}</title>
+    </head>
+    <body>
+        <h1>{STATE:name}</h1>
+    </body>
+</html>"""
+
 WEB_ASSETS = {
 
     "public": [
@@ -909,7 +927,7 @@ WEB_ASSETS = {
             "items": [
                 {
                     "filename": "index.html",
-                    "content": "<!DOCTYPE html>\n<html lang=\"en\">\n    <head>\n        <meta charset=\"utf-8\"/>\n        <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"/>\n        <title>{STATE:name}</title>\n    </head>\n    <body>\n        <h1>{STATE:name}</h1>\n    </body>\n</html>"
+                    "content": INDEX_HTML
                 }
             ]
         }
