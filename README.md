@@ -4,6 +4,8 @@ Sprk is a versatile command line tool, tool template and sample tool set.
 
 Similar in concept to the `argparse` module in the Python standard library, it's intended as a basis for customized command sets, to be extended and adapted by the user from any directory and to any degree as circumstances and needs change.
 
+In particular, it takes a 'help page first' approach for a clear high-level overview when creating or modifying a tool and allows tasks to be grouped and ordered. It also makes options for file tree creation especially simple, even with little knowledge of Python, and provides an integrated means of composing content for those trees.
+
 It does everything by default with a single source file.
 
 - [Getting started](#getting-started)
