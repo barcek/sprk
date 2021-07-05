@@ -31,7 +31,7 @@ It does everything by default with a single source file.
 
 ## Getting started
 
-Sprk 1.8.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.9.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -80,6 +80,7 @@ A configuration dictionary containing certain initial values can be passed when 
 ```python
 tool_1 = Sprker({
     "prep": [lambda self: print("Starting...")],
+    "show": "all",
     "lead": ["project"],
     "tidy": [lambda self: print("Finished.")]
 })
@@ -88,6 +89,7 @@ tool_1 = Sprker({
 The values in this case are:
 
 - one lambda to be run before the standard tasks (`prep`) and one before the program ends (`tidy`), each receiving the tool instance;
+- a messaging level, in this case `all` to override the default and show all messages (options: `all`, `err` (the default, for errors only) and `off`, for no messaging);
 - the name of the 'project' pool as a `lead` pool, those which are given priority over other pools, meaning its tasks will be run before tasks in any pools listed later or not listed (see [Pools & ranks](#pools--ranks)) below.
 
 Other possible keys are `name` for the project name string value, `root`, `code` and `main` for path string values (passed when assigned to `pathlib.Path`), `batches` for instances of the tool internal Batch class containing items to be built (see [Runtime overview](#runtime-overview) below), `caps` for a list of call cap dictionaries (see [Calls](#calls) below) and `wait` for functions to be run before those in `tidy`, intended for blocking processes dependent on tasks or built items.
@@ -409,7 +411,7 @@ The following are possible next steps in the development of the code base. The g
 
 - allow for a confirmation request when overwriting and for precise positioning when appending and inserting content
 - add a runtime undo option for rollback on error at the build stage
-- offer less verbose or no terminal output at runtime
+- provide a Sprker method and sample tool option to modify messaging level at runtime
 - support a list of current project directories for ease of movement among them
 - enable viewing of snippets stored in source file variables
 - enable assignment of snippets to source file variables from the command line or a file, possibly by line number or identifier
