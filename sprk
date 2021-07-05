@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.8.1
+# sprk v 1.9.0
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -110,6 +110,7 @@ class Option(Process):
 class Builder():
 
     def __init__(self, pars: dict) -> None:
+        self.show = "err" if "show" not in pars else pars["show"]
         self.vars = {
             "delims": {"opening": "{", "divider": ":", "closing": "}"},
             "values": {
@@ -138,6 +139,17 @@ class Builder():
             self.dir = CURRENT_DIR if "dir" not in pars else pars["dir"]
             self.items = [] if "items" not in pars else pars["items"]
 
+    def show_messages(self, messages: list, level: str = "inf") -> None:
+        """
+        Prints messages if level is equal to or lower than the show attribute.
+        >>> S.show_messages(['t_str'])
+        t_str
+        """
+        if self.show == "off" or (self.show == "err" and level == "inf"):
+            return
+        for message in messages:
+            print(message)
+
     def update_state(self, new_state: dict = {}) -> None:
         """
         Updates the state attribute with any new state.
@@ -157,8 +169,7 @@ class Builder():
             self.state["nums"][type] = count(start=1, step=1)
         return f'new_{type}_{next(self.state["nums"][type])}'
 
-    @staticmethod
-    def read_file(filename: Union[str, Path]) -> str:
+    def read_file(self, filename: Union[str, Path]) -> str:
         """
         Returns any content read from a file for a given filename.
         >>> with NamedTemporaryFile() as f:
@@ -171,8 +182,7 @@ class Builder():
             with open(filename, 'rb') as f:
                 content = f.read().decode()
         except Exception as err:
-            print(f"Error: content not read from file '{filename}'.")
-            print(err)
+            self.show_messages([f"Error: content not read from file '{filename}'. {err}"], "err")
         return "" if content is None else content
 
     def write_file(self, path: Union[str, Path] = None, content: str = "",
@@ -196,9 +206,9 @@ class Builder():
         try:
             with open(path, flag) as f:
                 f.write(content)
-            print(messages["success"])
+            self.show_messages([messages["success"]])
         except Exception as err:
-            print(messages["failure"])
+            self.show_messages([messages["failure"]], "err")
             print(err)
 
     def build_identifier(self, value: dict, delims: dict) -> dict:
@@ -325,14 +335,13 @@ class Builder():
         if path not in dir.iterdir():
             try:
                 path.touch()
-                print(f"Created file {path}")
+                self.show_messages([f"Created file {path}"])
             except Exception as err:
-                print(
+                self.show_messages([
                     f"Error: file '{name}' may not have been created"
                     f"{' with content:' if content else '.'}"
                     f"{newline if content else ''}{content if content else ''}"
-                )
-                print(err)
+                , err], "err")
                 return False
         if content:
             if input["flag"] == "i":
@@ -360,13 +369,12 @@ class Builder():
         path = dir / name
         try:
             path.mkdir()
-            print(f"Created folder {path}/")
+            self.show_messages([f"Created folder {path}/"])
         except FileExistsError:
-            print(f"Found existing folder {path}/")
+            self.show_messages([f"Found existing folder {path}/"], "err")
             pass
         except Exception as err:
-            print(f"Error: folder '{name}' may not have been created.")
-            print(err)
+            self.show_messages([f"Error: folder '{name}' may not have been created. {err}"], "err")
             return False
         if items:
             self.create_items(items, path)
@@ -422,7 +430,7 @@ class Builder():
         True
         """
         if self.batches:
-            print("Building batches...")
+            self.show_messages(["Building batches..."])
         for batch in self.batches:
             self.create_items(batch.items, batch.dir)
 
@@ -489,7 +497,7 @@ class Composer(Builder):
         """
         self.items = self.queue_modified()
         if self.items:
-            print("Composing items...")
+            self.show_messages(["Composing items..."])
         for item in self.items:
             for call in item.form["calls"]:
                 call(item)
@@ -620,7 +628,7 @@ class Runner(Composer):
                 else:
                     return Option({ "tool": self, "call": lambda self, pars: {} })
         else:
-            print(f"Note: '{'--' if len(flag) > 1 else '-'}{flag}' is not a flag.")
+            self.show_messages([f"Note: '{'--' if len(flag) > 1 else '-'}{flag}' is not a flag."])
             return Option({
                 "tool": self,
                 "call": self.show_help if self.request_call("show_help")\
@@ -701,7 +709,7 @@ class Runner(Composer):
         """Calls to queue tasks, then calls to order by pool and rank and run."""
         tasks = self.queue_options(argv) + self.queue_processes()
         if tasks:
-            print("Running tasks...")
+            self.show_messages(["Running tasks..."])
             pipe(
                 self.order_tasks_by_pool,
                 self.order_tasks_by_rank,
@@ -737,11 +745,11 @@ class Sprker(Runner):
         """Prints all items in the TOOLS dictionary or replaces the active tool."""
         old = self.tool.state["tool"]
         if not pars:
-            print(f"Active tool: {old}. Available: {'; '.join(TOOLS.keys())}.")
+            self.tool.show_messages([f"Active tool: {old}. Available: {'; '.join(TOOLS.keys())}."])
             return {}
         new = pars[0]
         if new not in TOOLS.keys():
-            print(f"Tool '{new}' does not exist.")
+            self.tool.show_messages([f"Tool '{new}' does not exist."])
             return {}
         content = self.tool.read_file(PATH_TO_SELF)
         content = content.replace(f'ACTIVE_TOOL = TOOLS["{old}"]', f'ACTIVE_TOOL = TOOLS["{new}"]')
@@ -764,14 +772,13 @@ class Sprker(Runner):
             and SPRKFILENAME in os.listdir(pars[0]):
             src = Path(pars[0]) / SPRKFILENAME
         elif pars:
-            print(f"Note: '{SPRKFILENAME}' not found at {pars[0]}.")
+            self.tool.show_messages([f"Note: '{SPRKFILENAME}' not found at {pars[0]}."])
             return {}
         try:
             shutil.copy(src, PATH_TO_SELF)
-            print("Updated sprk.")
+            self.tool.show_messages(["Updated sprk."])
         except Exception as err:
-            print(f"May not have updated sprk.")
-            print(err)
+            self.tool.show_messages([f"May not have updated sprk. {err}"], "err")
 
     @staticmethod
     def backup(self, pars=[]):
@@ -782,14 +789,13 @@ class Sprker(Runner):
         elif pars and os.path.isdir(pars[0]):
             dest = Path(pars[0]) / SPRKFILENAME
         elif pars:
-            print(f"{SPRKFILENAME} not copied: {pars[0]} not a valid argument for DIR.")
+            self.tool.show_messages([f"{SPRKFILENAME} not copied: {pars[0]} not a valid argument for DIR."])
             return {}
         try:
             shutil.copy(PATH_TO_SELF, dest)
-            print(f"Copied sprk to {dest}")
+            self.tool.show_messages([f"Copied sprk to {dest}"])
         except Exception as err:
-            print(f"May not have copied sprk to {dest}")
-            print(err)
+            self.tool.show_messages([f"May not have copied sprk to {dest}. {err}"], "err")
 
 
 # verification of docstring interactive examples - optional:
@@ -819,7 +825,7 @@ def run_docstring_interactive_examples(is_verbose=False):
     import doctest
 
     print('Running docstring interactive examples...')
-    doctest.testmod(extraglobs={"S": Sprker({"_test": TEST_VALUES})}, verbose=is_verbose)
+    doctest.testmod(extraglobs={"S": Sprker({"_test": TEST_VALUES, "show": "all"})}, verbose=is_verbose)
 
 
 # resource instances
@@ -962,8 +968,7 @@ def initialize_git(self, pars=[]):
     try:
         os.system(f'cd {self.tool.state["root"]}; git init; cd ..')
     except Exception as err:
-        print("Git repository may not have been initialized.")
-        print(err)
+        self.tool.show_messages(["Git repository may not have been initialized. {err}"], "err")
     self.tool.modify_template("ignores", {
         "nonr": [".git", ".gitignore"],
         "files": [
@@ -971,16 +976,15 @@ def initialize_git(self, pars=[]):
         ]
     })
 
-def open_browser_tab(url):
+def open_browser_tab(resource, url):
     """Attempts to open a new default browser tab displaying a given URL."""
     try:
         webbrowser.open_new_tab(url)
-        print(f"Requested a browser tab displaying {url}.")
+        resource.tool.show_messages([f"Requested a browser tab displaying {url}."])
     except Exception as err:
-        print(f"Error: may not have opened a browser tab displaying {url}.")
-        print(err)
+        resource.tool.show_messages([f"Error: may not have opened a browser tab displaying {url}. {err}"], "err")
 
-def get_file_server(root, host, port):
+def get_file_server(resource, root, host, port):
     """Returns a function to serve files from a given root to a given URL."""
 
     class StaticHandler(SimpleHTTPRequestHandler):
@@ -994,14 +998,13 @@ def get_file_server(root, host, port):
     def serve_files(self):
         try:
             with HTTPServer((host, port), staticHandler) as server:
-                open_browser_tab(f"{host}:{port}")
-                print(f"Starting the server: '{root}' to {host}:{port}.")
+                open_browser_tab(resource, f"{host}:{port}")
+                resource.tool.show_messages([f"Starting the server: '{root}' to {host}:{port}."])
                 server.serve_forever()
         except KeyboardInterrupt:
-            print("\nServer stopped.")
+            resource.tool.show_messages(["\nServer stopped."])
         except Exception as err:
-            print("Error: may not have started server.")
-            print(err)
+            resource.tool.show_messages(["Error: may not have started server. {err}"], "err")
 
     return serve_files
 
@@ -1010,7 +1013,7 @@ def serve_public_local(self, pars=[]):
     root = pars[0] if pars else str(self.tool.state["root"] / "public")
     host = "localhost"
     port = int(pars[1]) if len(pars) > 1 else 8080
-    serve_public_localhost_8080 = get_file_server(root, host, port)
+    serve_public_localhost_8080 = get_file_server(self, root, host, port)
     self.tool.work["wait"].append(serve_public_localhost_8080)
 
 def test_source_code(self, pars=[]):
@@ -1078,7 +1081,7 @@ CHOOSE = {
     "desc": "open the 'choosealicense.com' list in a new tab",
     "word": "choose",
     "char": "c",
-    "call": lambda self, pars=[]: open_browser_tab("https://choosealicense.com/licenses")
+    "call": lambda self, pars=[]: open_browser_tab(self, "https://choosealicense.com/licenses")
 }
 
 SERVE = {
@@ -1093,14 +1096,14 @@ SPRK = {
     "desc": "open the sprk Github repo page in a browser tab",
     "word": "sprk",
     "char": "s",
-    "call": lambda self, pars=[]: open_browser_tab("https://github.com/barcek/sprk")
+    "call": lambda self, pars=[]: open_browser_tab(self, "https://github.com/barcek/sprk")
 }
 
 PYTHON = {
     "desc": "open the Python3 documentation in a browser tab",
     "word": "python",
     "char": "p",
-    "call": lambda self, pars=[]: open_browser_tab("https://www.python.org/doc/")
+    "call": lambda self, pars=[]: open_browser_tab(self, "https://www.python.org/doc/")
 }
 
 TEST = {
@@ -1117,6 +1120,7 @@ TEST = {
 TOOLS.update({
     "combined": Sprker({
         "prep": [lambda self: print("Starting...")],
+        "show": "all",  # either "off", "err" (default) or "all"
         "lead": ["project"],  # order of priority for any pools
         "tidy": [lambda self: print("Finished.")]
     })
@@ -1196,6 +1200,7 @@ TOOLS["combined"].provide_resources([
 TOOLS.update({
     "creator": Sprker({
         "prep": [lambda self: print("Starting...")],
+        "show": "all",  # either "off", "err" (default) or "all"
         "lead": ["project"],  # order of priority for any pools
         "tidy": [lambda self: print("Finished.")]
     })
@@ -1268,6 +1273,7 @@ TOOLS["creator"].provide_resources([
 TOOLS.update({
     "adapter": Sprker({
         "prep": [lambda self: print("Starting...")],
+        "show": "all",  # either "off", "err" (default) or "all"
         "tidy": [lambda self: print("Finished.")]
     })
 })
