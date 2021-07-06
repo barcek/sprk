@@ -31,7 +31,7 @@ It does everything by default with a single source file.
 
 ## Getting started
 
-Sprk 1.9.0 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.9.1 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -293,7 +293,7 @@ Strings or functions placed on the 'utils' attribute can be accessed by use of t
 
 In each case, the entire identifier is replaced with the given value if it exists or a failure message otherwise.
 
-Three other variables are defined for use in generating the help page. Two of these - `BLANK` for an empty string and `USING` for the current tool - can be applied as is in other contexts. The third - `ALIGN` - is used to align columns within a text by means of the following procedure:
+Four other variables are defined for use in generating the help page. Three of these - `BLANK` for an empty string, `USING` for the current tool and `SPRKV` for sprk name and version - can be applied as is in other contexts. The fourth - `ALIGN` - is used to align columns within a text by means of the following procedure:
 
 1. placing the identifier on each line of the text at the point at which a number of spaces of offset is required;
 2. passing the lines with identifier as a list of strings to the `get_offsets` static method on the `Runner` class, to get a list of integers each of which is the number of spaces of offset for the respective line;
