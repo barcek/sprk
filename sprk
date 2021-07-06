@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.9.0
+# sprk v 1.9.1
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -513,6 +513,8 @@ class Runner(Composer):
                 "source": lambda tool, content, name: None if f"{name}_offsets" not in tool.state
                     else tool.stringify_offset(tool.state[f"{name}_offsets"].pop(0))
             },
+            "sprkv": {"string": "SPRKV", "source": lambda\
+                tool, content, name: tool.read_file(PATH_TO_SELF)[22:34]},
             "blank": {"string": "BLANK", "source": lambda tool, content, name: ""},
             "using": {"string": "USING", "source": lambda tool, content, name: tool.state["tool"]}
         }}
@@ -831,6 +833,7 @@ def run_docstring_interactive_examples(is_verbose=False):
 # resource instances
 
 BLANK = Resource({"info": "{BLANK}"})
+SPRKV = Resource({"info": "{SPRKV}"})
 USAGE = Resource({"info": "Usage: sprk [--option/-o [ARG ...] ...]"})
 USING = Resource({"info": "Using: {USING}"})
 
@@ -1137,6 +1140,8 @@ TOOLS["combined"].insert_templates([
 TOOLS["combined"].provide_resources([
 
     BLANK,
+    SPRKV,
+    BLANK,
     USAGE,
 
     BLANK,
@@ -1216,6 +1221,8 @@ TOOLS["creator"].insert_templates([
 TOOLS["creator"].provide_resources([
 
     BLANK,
+    SPRKV,
+    BLANK,
     USAGE,
 
     BLANK,
@@ -1283,6 +1290,8 @@ TOOLS.update({
 
 TOOLS["adapter"].provide_resources([
 
+    BLANK,
+    SPRKV,
     BLANK,
     USAGE,
 
