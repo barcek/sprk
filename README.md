@@ -31,7 +31,7 @@ It does everything by default with a single source file.
 
 ## Getting started
 
-Sprk 1.9.1 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.9.3 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
 
 ```shell
 chmod +x sprk
@@ -113,6 +113,8 @@ The `Runner` is the basis for the standard tool. It provides for:
 - two sets of final optional actions (`wait` and `tidy`).
 
 The above order is the order in which these events occur (see [Runtime overview](#runtime-overview) below).
+
+The `Runner` also provides methods to show the current sprk version number and the help page.
 
 #### Sprker (tool class)
 
