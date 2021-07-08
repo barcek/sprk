@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.9.1
+# sprk v 1.9.2
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -514,7 +514,7 @@ class Runner(Composer):
                     else tool.stringify_offset(tool.state[f"{name}_offsets"].pop(0))
             },
             "sprkv": {"string": "SPRKV", "source": lambda\
-                tool, content, name: tool.read_file(PATH_TO_SELF)[22:34]},
+                tool, content, name: Runner.get_version(tool)},
             "blank": {"string": "BLANK", "source": lambda tool, content, name: ""},
             "using": {"string": "USING", "source": lambda tool, content, name: tool.state["tool"]}
         }}
@@ -601,6 +601,24 @@ class Runner(Composer):
                 self.tool.vars["values"], self.tool.vars["delims"])
             if info is not None:
                 print(info)
+
+    @staticmethod
+    def get_version(tool) -> str:
+        """
+        Returns the substring from line 3 containing name and version number.
+        >>> S.get_version(S) # doctest: +ELLIPSIS
+        'sprk v...'
+        """
+        return tool.read_file(PATH_TO_SELF)[22:34]
+
+    @staticmethod
+    def show_version(self, pars: list = []) -> None:
+        """
+        Prints the substring from line 3 containing name and version number.
+        >>> S.show_version(Option({"tool": S})) # doctest: +ELLIPSIS
+        Source code: sprk v...
+        """
+        print(f"Source code: {self.tool.get_version(self.tool)}")
 
     def request_call(self, call: str) -> bool:
         """
