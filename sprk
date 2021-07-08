@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.9.2
+# sprk v 1.9.3
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -876,6 +876,12 @@ UPDATE = {
     "call": Sprker.update,
     "args": ["[DIR]"]
 }
+VERSION = {
+    "desc": "show the current version number",
+    "word": "version",
+    "char": "V",
+    "call": Runner.show_version
+}
 HELP = {
     "desc": "show the help page",
     "word": "help",
@@ -1204,6 +1210,7 @@ TOOLS["combined"].provide_resources([
 
     BLANK,
 
+    Option(VERSION),
     Option(HELP),
 
     BLANK,
@@ -1279,6 +1286,7 @@ TOOLS["creator"].provide_resources([
 
     BLANK,
 
+    Option(VERSION),
     Option(HELP),
 
     BLANK,
@@ -1332,6 +1340,7 @@ TOOLS["adapter"].provide_resources([
 
     BLANK,
 
+    Option(VERSION),
     Option(HELP),
 
     BLANK,
