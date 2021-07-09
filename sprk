@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.9.3
+# sprk v 1.9.4
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -585,7 +585,7 @@ class Runner(Composer):
         return " " * offset
 
     @staticmethod
-    def show_help(self, pars: list = []) -> None:
+    def show_help(resource, pars: list = []) -> None:
         """
         Builds a help page using any resource instance info attributes.
         >>> (S.resources.extend(S._test["t_resources"]) == None)\
@@ -593,12 +593,12 @@ class Runner(Composer):
          -d, --do    do sth
          -e, --else  do sth else
         """
-        infos = [info for info in self.tool.getattrs(self.tool, "resources",
+        infos = [info for info in resource.tool.getattrs(resource.tool, "resources",
             "info") if info is not None]
-        self.tool.state["help_offsets"] = self.tool.get_offsets(infos)
+        resource.tool.state["help_offsets"] = resource.tool.get_offsets(infos)
         for info in infos:
-            info = self.tool.handle_variables(info, "help",
-                self.tool.vars["values"], self.tool.vars["delims"])
+            info = resource.tool.handle_variables(info, "help",
+                resource.tool.vars["values"], resource.tool.vars["delims"])
             if info is not None:
                 print(info)
 
@@ -612,13 +612,13 @@ class Runner(Composer):
         return tool.read_file(PATH_TO_SELF)[22:34]
 
     @staticmethod
-    def show_version(self, pars: list = []) -> None:
+    def show_version(resource, pars: list = []) -> None:
         """
         Prints the substring from line 3 containing name and version number.
         >>> S.show_version(Option({"tool": S})) # doctest: +ELLIPSIS
         Source code: sprk v...
         """
-        print(f"Source code: {self.tool.get_version(self.tool)}")
+        print(f"Source code: {resource.tool.get_version(resource.tool)}")
 
     def request_call(self, call: str) -> bool:
         """
@@ -761,28 +761,28 @@ class Sprker(Runner):
         super(Sprker, self).__init__(pars)
 
     @staticmethod
-    def switch(self, pars=[]):
+    def switch(resource, pars=[]):
         """Prints all items in the TOOLS dictionary or replaces the active tool."""
-        old = self.tool.state["tool"]
+        old = resource.tool.state["tool"]
         if not pars:
-            self.tool.show_messages([f"Active tool: {old}. Available: {'; '.join(TOOLS.keys())}."])
+            resource.tool.show_messages([f"Active tool: {old}. Available: {'; '.join(TOOLS.keys())}."])
             return {}
         new = pars[0]
         if new not in TOOLS.keys():
-            self.tool.show_messages([f"Tool '{new}' does not exist."])
+            resource.tool.show_messages([f"Tool '{new}' does not exist."])
             return {}
-        content = self.tool.read_file(PATH_TO_SELF)
+        content = resource.tool.read_file(PATH_TO_SELF)
         content = content.replace(f'ACTIVE_TOOL = TOOLS["{old}"]', f'ACTIVE_TOOL = TOOLS["{new}"]')
         messages = {
             "success": f"Switched from {old} to {new}.",
             "failure": f"May not have switched from {old} to {new}."
         }
-        self.tool.write_file(PATH_TO_SELF, content, "w", messages)
+        resource.tool.write_file(PATH_TO_SELF, content, "w", messages)
         TOOLS[new].update_state({"tool": new})
-        self.tool.show_help(Option({"tool": TOOLS[new]}))
+        resource.tool.show_help(Option({"tool": TOOLS[new]}))
 
     @staticmethod
-    def update(self, pars=[]):
+    def update(resource, pars=[]):
         """Attempts to copy a sprkfile over the sprk source file."""
         src = PATH_TO_SPRKFILE
         if pars and os.path.isfile(pars[0])\
@@ -792,16 +792,16 @@ class Sprker(Runner):
             and SPRKFILENAME in os.listdir(pars[0]):
             src = Path(pars[0]) / SPRKFILENAME
         elif pars:
-            self.tool.show_messages([f"Note: '{SPRKFILENAME}' not found at {pars[0]}."])
+            resource.tool.show_messages([f"Note: '{SPRKFILENAME}' not found at {pars[0]}."])
             return {}
         try:
             shutil.copy(src, PATH_TO_SELF)
-            self.tool.show_messages(["Updated sprk."])
+            resource.tool.show_messages(["Updated sprk."])
         except Exception as err:
-            self.tool.show_messages([f"May not have updated sprk. {err}"], "err")
+            resource.tool.show_messages([f"May not have updated sprk. {err}"], "err")
 
     @staticmethod
-    def backup(self, pars=[]):
+    def backup(resource, pars=[]):
         """Attempts to copy the sprk source file to another location."""
         dest = PATH_TO_SPRKFILE
         if pars and os.path.basename(pars[0]) == SPRKFILENAME:
@@ -809,13 +809,13 @@ class Sprker(Runner):
         elif pars and os.path.isdir(pars[0]):
             dest = Path(pars[0]) / SPRKFILENAME
         elif pars:
-            self.tool.show_messages([f"{SPRKFILENAME} not copied: {pars[0]} not a valid argument for DIR."])
+            resource.tool.show_messages([f"{SPRKFILENAME} not copied: {pars[0]} not a valid argument for DIR."])
             return {}
         try:
             shutil.copy(PATH_TO_SELF, dest)
-            self.tool.show_messages([f"Copied sprk to {dest}"])
+            resource.tool.show_messages([f"Copied sprk to {dest}"])
         except Exception as err:
-            self.tool.show_messages([f"May not have copied sprk to {dest}. {err}"], "err")
+            resource.tool.show_messages([f"May not have copied sprk to {dest}. {err}"], "err")
 
 
 # verification of docstring interactive examples - optional:
@@ -896,24 +896,24 @@ import webbrowser
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 
-# 'combined' template functions, receiving template instance as 'self'
+# 'combined' template functions, receiving template instance as 'template'
 
-def create_ignores(self):
+def create_ignores(template):
     """Prepares each file in the ignores template and calls to queue all as a batch."""
     items = []
-    for file in self.form["files"]:
+    for file in template.form["files"]:
         entries = []
         for type in list(filter(
             lambda key: key != "files" and key != "calls",
-            self.form.keys()
+            template.form.keys()
         )):
             if type in file["list"]:
-                entries.extend(self.form[type])
+                entries.extend(template.form[type])
         items.append({
             "filename": file["name"],
             "content": "\n".join(list(dict.fromkeys(entries)))
         })
-    self.tool.queue_items(self.tool.state["root"], items)
+    template.tool.queue_items(template.tool.state["root"], items)
 
 
 # 'combined' resource constants,
@@ -969,12 +969,12 @@ WEB_ASSETS = {
 
 
 # 'combined' resource functions,
-# receiving resource instance as 'self' & any arguments as 'pars',
+# receiving resource instance as 'resource' & any arguments as 'pars',
 # optionally returning a dictionary with any state changes
 
-def start_project(self, pars=[]):
+def start_project(resource, pars=[]):
     """Attempts to create a project folder and updates name and paths in state."""
-    name = pars[0] if pars else self.tool.state["name"]
+    name = pars[0] if pars else resource.tool.state["name"]
     path = CURRENT_DIR / name
     if path in CURRENT_DIR.iterdir():
         response = input(
@@ -985,18 +985,18 @@ def start_project(self, pars=[]):
         if response not in ["y", "Y"]:
             sys.exit()
     root = code = path
-    self.tool.create_folder(dirname=name)
-    if self.tool.state["code"] != self.tool.state["root"]:
-        code = self.tool.state["code"]
+    resource.tool.create_folder(dirname=name)
+    if resource.tool.state["code"] != resource.tool.state["root"]:
+        code = resource.tool.state["code"]
     return {"name": name, "root": root, "code": code}
 
-def initialize_git(self, pars=[]):
+def initialize_git(resource, pars=[]):
     """Attempts to initialize a Git repo and updates the ignores template."""
     try:
-        os.system(f'cd {self.tool.state["root"]}; git init; cd ..')
+        os.system(f'cd {resource.tool.state["root"]}; git init; cd ..')
     except Exception as err:
-        self.tool.show_messages(["Git repository may not have been initialized. {err}"], "err")
-    self.tool.modify_template("ignores", {
+        resource.tool.show_messages(["Git repository may not have been initialized. {err}"], "err")
+    resource.tool.modify_template("ignores", {
         "nonr": [".git", ".gitignore"],
         "files": [
             {"name": ".gitignore", "list": ["rein", "sens"]}
@@ -1022,28 +1022,28 @@ def get_file_server(resource, root, host, port):
 
     staticHandler = StaticHandler
 
-    def serve_files(self):
+    def serve_files(tool):
         try:
             with HTTPServer((host, port), staticHandler) as server:
                 open_browser_tab(resource, f"{host}:{port}")
-                resource.tool.show_messages([f"Starting the server: '{root}' to {host}:{port}."])
+                tool.show_messages([f"Starting the server: '{root}' to {host}:{port}."])
                 server.serve_forever()
         except KeyboardInterrupt:
-            resource.tool.show_messages(["\nServer stopped."])
+            tool.show_messages(["\nServer stopped."])
         except Exception as err:
-            resource.tool.show_messages(["Error: may not have started server. {err}"], "err")
+            tool.show_messages(["Error: may not have started server. {err}"], "err")
 
     return serve_files
 
-def serve_public_local(self, pars=[]):
+def serve_public_local(resource, pars=[]):
     """Passes arguments to 'get_file_server' and adds to 'wait' work queue."""
-    root = pars[0] if pars else str(self.tool.state["root"] / "public")
+    root = pars[0] if pars else str(resource.tool.state["root"] / "public")
     host = "localhost"
     port = int(pars[1]) if len(pars) > 1 else 8080
-    serve_public_localhost_8080 = get_file_server(self, root, host, port)
-    self.tool.work["wait"].append(serve_public_localhost_8080)
+    serve_public_localhost_8080 = get_file_server(resource, root, host, port)
+    resource.tool.work["wait"].append(serve_public_localhost_8080)
 
-def test_source_code(self, pars=[]):
+def test_source_code(resource, pars=[]):
     run_docstring_interactive_examples(True)
 
 
@@ -1108,7 +1108,7 @@ CHOOSE = {
     "desc": "open the 'choosealicense.com' list in a new tab",
     "word": "choose",
     "char": "c",
-    "call": lambda self, pars=[]: open_browser_tab(self, "https://choosealicense.com/licenses")
+    "call": lambda resource, pars=[]: open_browser_tab(resource, "https://choosealicense.com/licenses")
 }
 
 SERVE = {
@@ -1123,14 +1123,14 @@ SPRK = {
     "desc": "open the sprk Github repo page in a browser tab",
     "word": "sprk",
     "char": "s",
-    "call": lambda self, pars=[]: open_browser_tab(self, "https://github.com/barcek/sprk")
+    "call": lambda resource, pars=[]: open_browser_tab(resource, "https://github.com/barcek/sprk")
 }
 
 PYTHON = {
     "desc": "open the Python3 documentation in a browser tab",
     "word": "python",
     "char": "p",
-    "call": lambda self, pars=[]: open_browser_tab(self, "https://www.python.org/doc/")
+    "call": lambda resource, pars=[]: open_browser_tab(resource, "https://www.python.org/doc/")
 }
 
 TEST = {
@@ -1146,10 +1146,10 @@ TEST = {
 
 TOOLS.update({
     "combined": Sprker({
-        "prep": [lambda self: print("Starting...")],
+        "prep": [lambda tool: print("Starting...")],
         "show": "all",  # either "off", "err" (default) or "all"
         "lead": ["project"],  # order of priority for any pools
-        "tidy": [lambda self: print("Finished.")]
+        "tidy": [lambda tool: print("Finished.")]
     })
 })
 
@@ -1229,10 +1229,10 @@ TOOLS["combined"].provide_resources([
 
 TOOLS.update({
     "creator": Sprker({
-        "prep": [lambda self: print("Starting...")],
+        "prep": [lambda tool: print("Starting...")],
         "show": "all",  # either "off", "err" (default) or "all"
         "lead": ["project"],  # order of priority for any pools
-        "tidy": [lambda self: print("Finished.")]
+        "tidy": [lambda tool: print("Finished.")]
     })
 })
 
@@ -1305,9 +1305,9 @@ TOOLS["creator"].provide_resources([
 
 TOOLS.update({
     "adapter": Sprker({
-        "prep": [lambda self: print("Starting...")],
+        "prep": [lambda tool: print("Starting...")],
         "show": "all",  # either "off", "err" (default) or "all"
-        "tidy": [lambda self: print("Finished.")]
+        "tidy": [lambda tool: print("Finished.")]
     })
 })
 
