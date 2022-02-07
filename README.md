@@ -45,11 +45,9 @@ It does everything by default with a single source file.
 
 ## Getting started
 
-Sprk 1.9.4 is written in Python 3.8.5. On a Linux system with a compatible version of Python installed, you should be able to place the sprk source file in the `/usr/bin` directory, make it executable with the below command and call it from any directory with the command `sprk`.
+Sprk 1.9.4 is written in Python 3.8.5.
 
-```shell
-chmod +x sprk
-```
+On a Linux system with a compatible version of Python installed, the source file can be run with the command `python3 sprk` while in the same directory, and from elsewhere using the pattern `python3 path/to/sprk`. With the same setup, it should be possible to run it from any directory with `sprk` by a) placing it in the '/bin' or '/usr/bin' directory and b) making it executable, if not already, with `chmod +x sprk`.
 
 The command `sprk`, `sprk -h` or `sprk --help` will show a help page.
 
