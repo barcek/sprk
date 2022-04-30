@@ -2,11 +2,49 @@
 
 Sprk is a versatile command line tool, tool template and sample tool set.
 
-Similar in concept to the `argparse` module in the Python standard library, it's intended as a basis for customized command sets, to be extended and adapted by the user from any directory and to any degree as circumstances and needs change.
+## Why?
 
-In particular, it takes a 'help page first' approach for a clear high-level overview when creating or modifying a tool and allows tasks to be grouped and ordered. It also makes options for file tree creation especially simple, even with little knowledge of Python, and provides an integrated means of composing content for those trees.
+For customized command sets, to be used, extended and adapted by the user from any directory and to any degree as circumstances and needs change.
 
-It does everything by default with a single source file.
+Though similar in concept to the `argparse` module in the Python standard library, it takes a more visual 'help page first' approach, for a clear high-level overview when creating or modifying a tool. It allows tasks to be grouped and ordered and also makes options for file tree creation especially simple, even with little knowledge of Python, and provides an integrated means of composing content for those trees. It does everything by default with a single source file.
+
+## How?
+
+In essence, each new tool is created through the layout of its help page. A given help page is after all a summary of a tool, identifying its capabilities and how to access them. This provides a useful top-level structure.
+
+The layout of a help page in sprk is simply a list of instances. Each instance represents a command line option, a process or a simple resource, e.g. an instruction, or a blank line to space other entries. The instances are ordered as they appear on the help page.
+
+For example, a simple tool might have the following help page:
+
+```
+Usage: sprk [--option/-o [ARG ...]]
+
+ -g, --greet [NAME] print a greeting, containing NAME if given
+ -h, --help         show the help page
+```
+
+This tool could be created in the sprk source file as follows:
+
+```python
+TOOLS.update({"greeter": Sprker()})
+TOOLS["greeter"].provide_resources([
+    USAGE,
+    BLANK,
+    Option({
+        "desc": "print a greeting, containing NAME if given",
+        "word": "greet",
+        "char": "g",
+        "call": lambda _, pars=[]: print(f"Hi{', ' + pars[0] if len(pars) >= 1 else ''}!")
+    }),
+    Option(HELP)
+])
+```
+
+The `USAGE` and `BLANK` entries in the list are preassigned instances of the Resource class, while `HELP` is a dictionary, as passed for `greet`. The `greet` dictionary's `call` property could of course be assigned a function defined elsewhere.
+
+For more detail on creation, see [Creating a tool](#creating-a-tool) below.
+
+For more complex examples, see [The sample tools](#the-sample-tools).
 
 - [Getting started](#getting-started)
     - [The sample tools](#the-sample-tools)
@@ -158,7 +196,9 @@ The order in which the resources are passed is the order in which their info val
 
 The `Resource` class has an `info` attribute which takes a string value used on the help page.
 
-The variable `{BLANK}` can be passed to create an empty line, and `BLANK_LINE` contains a resource instance for this purpose. Also available are `USAGE_LINE`, for the standard usage guide, and `USING_LINE`, for an instance which includes the `{USING}` variable, to show the current tool.
+The string `"{BLANK}"` can be passed to create an empty line, `"{SPRKV}"` for the sprk version number and `"{USING}"` for the current tool name.
+
+The variables `BLANK`, `SPRKV` and `USING` each contain a ready resource instance for a corresponding line. Also available is `USAGE`, for the standard usage guide.
 
 #### Process (resource class)
 
@@ -285,7 +325,7 @@ Below is an example of an `items` dictionary for a simple tree with a use of ins
 }
 ```
 
-This creates a directory named 'folder1' containing an empty sub-directory named 'folder2', a file named 'file1' with its content appended and a file named 'file2' with its content inserted. The inserted content is indented by two spaces and positioned following the string 'Insert here:', preceded by a newline and a hyphen and followed by a semi-colon. 
+This creates a directory named 'folder1' containing an empty sub-directory named 'folder2', a file named 'file1' with its content appended and a file named 'file2' with its content inserted. The inserted content is indented by two spaces and positioned following the string 'Insert here:', preceded by a newline and a hyphen and followed by a semi-colon.
 
 ### Host tool use
 
