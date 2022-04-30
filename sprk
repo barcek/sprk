@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v 1.9.4
+# sprk v1.10.0
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -59,7 +59,7 @@ def pipe(*fns: Callable) -> Callable:
 
 class Template():
 
-    def __init__(self, pars: dict) -> None:
+    def __init__(self, pars: dict = {}) -> None:
         self.name = self.tool.name_element("item") if "name" not in pars else pars["name"] # type: ignore[attr-defined]
         self.core = ["parts"] if "core" not in pars else pars["core"]
         self.form = {
@@ -72,14 +72,14 @@ class Template():
 
 class Resource():
 
-    def __init__(self, pars: dict) -> None:
+    def __init__(self, pars: dict = {}) -> None:
         self.tool = None if "tool" not in pars else pars["tool"]
         self.info = None if "info" not in pars else pars["info"]
 
 
 class Process(Resource):
 
-    def __init__(self, pars: dict) -> None:
+    def __init__(self, pars: dict = {}) -> None:
         super(Process, self).__init__(pars)
         self.pool = None if "pool" not in pars else pars["pool"]
         self.rank = 1 if "rank" not in pars else pars["rank"]
@@ -89,7 +89,7 @@ class Process(Resource):
 
 class Option(Process):
 
-    def __init__(self, pars: dict) -> None:
+    def __init__(self, pars: dict = {}) -> None:
         super(Option, self).__init__(pars)
         self.desc = "" if "desc" not in pars else pars["desc"]
         self.word = "" if "word" not in pars else pars["word"]
@@ -109,7 +109,7 @@ class Option(Process):
 
 class Builder():
 
-    def __init__(self, pars: dict) -> None:
+    def __init__(self, pars: dict = {}) -> None:
         self.show = "err" if "show" not in pars else pars["show"]
         self.vars = {
             "delims": {"opening": "{", "divider": ":", "closing": "}"},
@@ -135,7 +135,7 @@ class Builder():
 
     class Batch():
 
-        def __init__(self, pars: dict) -> None:
+        def __init__(self, pars: dict = {}) -> None:
             self.dir = CURRENT_DIR if "dir" not in pars else pars["dir"]
             self.items = [] if "items" not in pars else pars["items"]
 
@@ -437,7 +437,7 @@ class Builder():
 
 class Composer(Builder):
 
-    def __init__(self, pars: dict) -> None:
+    def __init__(self, pars: dict = {}) -> None:
         super(Composer, self).__init__(pars)
         self.templates: dict = {}
         self.items: list = []
@@ -505,7 +505,7 @@ class Composer(Builder):
 
 class Runner(Composer):
 
-    def __init__(self, pars):
+    def __init__(self, pars = {}):
         super(Runner, self).__init__(pars)
         self.vars["values"] = {**self.vars["values"], **{
             "align": {
@@ -536,7 +536,7 @@ class Runner(Composer):
 
     class Task():
 
-        def __init__(self, pars):
+        def __init__(self, pars = {}):
             self.process = Option({}) if "process" not in pars else pars["process"]
             self.args = [] if "args" not in pars else pars["args"]
 
@@ -757,7 +757,7 @@ class Runner(Composer):
 
 class Sprker(Runner):
 
-    def __init__(self, pars):
+    def __init__(self, pars = {}):
         super(Sprker, self).__init__(pars)
 
     @staticmethod
@@ -826,7 +826,7 @@ def run_docstring_interactive_examples(is_verbose=False):
 
     class TestClass():
 
-        def __init__(self, pars):
+        def __init__(self, pars = {}):
             self.t_attr_int = 0 if "int" not in pars else pars["int"]
             self.t_attr_list = [] if "items" not in pars else pars["items"]
 
