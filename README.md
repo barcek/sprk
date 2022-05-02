@@ -4,15 +4,15 @@ Sprk is a versatile command line tool, tool template and sample tool set.
 
 ## Why?
 
-For customized command sets, to be used, extended and adapted by the user from any directory and to any degree as circumstances and needs change.
+To create customized command sets that can be applied, extended and adapted from any directory, by default with a single source file.
 
-Though similar in concept to the `argparse` module in the Python standard library, it takes a more visual 'help page first' approach, for a clear high-level overview when creating or modifying a tool. It allows tasks to be grouped and ordered and also makes options for file tree creation especially simple, even with little knowledge of Python, and provides an integrated means of composing content for those trees. It does everything by default with a single source file.
+Similar in concept to the `argparse` module in the Python standard library, it follows a more visual 'help page first' approach, for a clear overview when developing. It allows tasks to be grouped and ordered, makes options for file tree creation especially simple and provides an integrated means of composing content.
 
 ## How?
 
-In essence, each new tool is created through the layout of its help page. A given help page is after all a summary of a tool, identifying its capabilities and how to access them. This provides a useful top-level structure.
+In essence, each new tool is created via the layout of its help page. Given that a help page acts as a summary of a tool, identifying its capabilities and how to access them, this provides a useful structure.
 
-The layout of a help page in sprk is simply a list of instances. Each instance represents a command line option, a process or a simple resource, e.g. an instruction, or a blank line to space other entries. The instances are ordered as they appear on the help page.
+The layout as code is simply a list of instances. Each represents a command line option, a process or a resource, e.g. an instruction, or a blank line to space other entries. The instances are ordered as they appear on the page.
 
 For example, a simple tool might have the following help page:
 
@@ -40,11 +40,13 @@ TOOLS["greeter"].provide_resources([
 ])
 ```
 
-The `USAGE` and `BLANK` entries in the list are preassigned instances of the Resource class, while `HELP` is a dictionary, as passed for `greet`. The `greet` dictionary's `call` property could of course be assigned a function defined elsewhere.
+The `USAGE` and `BLANK` entries in the list are instances of the Resource class, while `HELP` is a dictionary, as passed for `greet`. The `greet` dictionary's `call` property could of course be assigned a function defined elsewhere.
 
 For more detail on creation, see [Creating a tool](#creating-a-tool) below.
 
 For more complex examples, see [The sample tools](#the-sample-tools).
+
+## Contents
 
 - [Getting started](#getting-started)
     - [The sample tools](#the-sample-tools)
@@ -83,7 +85,7 @@ For more complex examples, see [The sample tools](#the-sample-tools).
 
 ## Getting started
 
-Sprk 1.9.4 is written in Python 3.8.5.
+Sprk 1.10.1 is written in Python 3.8.5.
 
 On a Linux system with a compatible version of Python installed, the source file can be run with the command `python3 sprk` while in the same directory, and from elsewhere using the pattern `python3 path/to/sprk`. With the same setup, it should be possible to run it from any directory with `sprk` by a) placing it in the '/bin' or '/usr/bin' directory and b) making it executable, if not already, with `chmod +x sprk`.
 
