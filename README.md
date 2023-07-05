@@ -79,15 +79,17 @@ For more complex examples, see [The sample tools](#the-sample-tools).
     - [Template (template class)](#template-template-class)
 - [Runtime overview](#runtime-overview)
 - [Code verification](#code-verification)
+    - [Type checking](#type-checking)
     - [Interactive examples](#interactive-examples)
-    - [Type annotation](#type-annotation)
 - [Development plan](#development-plan)
 
 ## Getting started
 
-Sprk 1.10.1 is written in Python 3.8.5.
+Sprk 1.10.4 is written in Python 3.8.5.
 
-On a Linux system with a compatible version of Python installed, the source file can be run with the command `python3 sprk` while in the same directory, and from elsewhere using the pattern `python3 path/to/sprk`. With the same setup, it should be possible to run it from any directory with `sprk` by a) placing it in the '/bin' or '/usr/bin' directory and b) making it executable, if not already, with `chmod +x sprk`.
+On a Linux system with a compatible version of Python installed, the source file can be run with the command `python3 sprk` while in the same directory, and from elsewhere using the pattern `python3 path/to/sprk`. With the same setup, it should be possible to run it from any directory with `sprk` alone by a) making it executable, if not already, with `chmod +x sprk` and b) placing it in a directory listed on the `$PATH` environment variable, e.g. '/bin' or '/usr/bin'.
+
+From here on, for simplicity, the base command is assumed to be `sprk`.
 
 The command `sprk`, `sprk -h` or `sprk --help` will show a help page.
 
@@ -433,33 +435,55 @@ This is a fairly complex example. Take a look at the option instance functions i
 
 ## Code verification
 
+The two verification scripts - 'verify.py' and 'verify.sh' - can be used to check types and run the interactive examples.
+
+The verification scripts can be run as follows:
+
+```shell
+python3 verify.py
+sh verify.sh
+```
+
+Either of the two can also be run with the command `./<filename>` while in the same directory, and from elsewhere using the pattern `path/to/<filename>`, by first making the file executable, if not already, with `chmod +x <filename>`. Both the Python and shell binary are assumed to be accessible via the '/usr/bin' directory, per the hashbang at the top of each file.
+
+```shell
+./verify.py
+./verify.sh
+```
+
+Either of the two - type checking and interactive examples - can instead be run individually using the specific command in 'verify.sh'.
+
+### Type checking
+
+The sprk source code imports from the `typing` module in the Python standard library. Type checking uses Mypy, an external tool. The Mypy-related dependencies per Python 3.11 are listed in the file 'requirements.txt'.
+
+To run the type checking only, for sprk:
+
+```shell
+mypy --python-version=3.8 sprk
+```
+
 ### Interactive examples
 
 The sprk source code includes docstrings with interactive examples verified using the `doctest` module in the Python standard library.
 
-The examples can be run by uncommenting the final line of the source code, to invoke the function `run_docstring_interactive_examples` when sprk itself is run.
-
-```python
-run_docstring_interactive_examples()
-```
-
-A summary is provided for each failure, with no summary indicating success. For a more verbose output, providing an overview even on success, pass `True`.
-
-```python
-run_docstring_interactive_examples(True)
-```
-
-The '-t' or '--test' option on both the **adapter** and **combined** sample tools will also run the examples in this way.
-
-### Type annotation
-
-The sprk source code also imports from the `typing` module in the Python standard library for type annotation and casting.
-
-Type checking for a modified Sprkfile can be performed using the Mypy package. Once installed, the following command can be run:
+To run the interactive examples only, for sprk:
 
 ```shell
-mypy Sprkfile
+sprk SPRK_TEST_DOCS
 ```
+
+A summary is provided for each failure, with no summary indicating success.
+
+The `--test` or `-t` flag, supported by both the **adapter** and **combined** sample tools, will also run the examples, with a more verbose output, providing an overview even on success
+
+Both methods ultimately call the function `run_docstring_interactive_examples`, which can be called whenever sprk itself is run by uncommenting the final line of the source code. The more verbose output requires the `is_verbose` keyword argument to be set to `True`.
+
+```python
+run_docstring_interactive_examples(is_verbose=True)
+```
+
+To omit the status message, the `is_managed` keyword argument can be set to `True`.
 
 ## Development plan
 
