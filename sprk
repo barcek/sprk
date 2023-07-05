@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v1.10.2
+# sprk v1.10.4
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -603,22 +603,22 @@ class Runner(Composer):
                 print(info)
 
     @staticmethod
-    def get_version(tool) -> str:
+    def get_version(tool, path: Path = PATH_TO_SELF ) -> str:
         """
         Returns the substring from line 3 containing name and version number.
-        >>> S.get_version(S) # doctest: +ELLIPSIS
+        >>> S.get_version(S, PATH_TO_SELF) # doctest: +ELLIPSIS
         'sprk v...'
         """
-        return tool.read_file(PATH_TO_SELF)[22:34]
+        return tool.read_file(path)[22:34]
 
     @staticmethod
-    def show_version(resource, pars: list = []) -> None:
+    def show_version(resource, pars: list = [], path: Path = PATH_TO_SELF) -> None:
         """
         Prints the substring from line 3 containing name and version number.
-        >>> S.show_version(Option({"tool": S})) # doctest: +ELLIPSIS
+        >>> S.show_version(Option({"tool": S}), [], PATH_TO_SELF) # doctest: +ELLIPSIS
         Source code: sprk v...
         """
-        print(f"Source code: {resource.tool.get_version(resource.tool)}")
+        print(f"Source code: {resource.tool.get_version(resource.tool, path)}")
 
     def request_call(self, call: str) -> bool:
         """
@@ -821,8 +821,8 @@ class Sprker(Runner):
 # verification of docstring interactive examples - optional:
 # uncomment last line of file to do so with each use of sprk
 
-def run_docstring_interactive_examples(is_verbose=False):
-    "Runs examples with a test Sprker instance and non-verbose by default."
+def get_doctest_extraglobs(**kwargs) -> dict:
+    """Returns a dictionary with a test Sprker instance and any pairs passed."""
 
     class TestClass():
 
@@ -842,10 +842,19 @@ def run_docstring_interactive_examples(is_verbose=False):
         "t_caps": [{"name": "t_fn", "poss": 2}]
     }
 
+    return {"S": Sprker({"_test": TEST_VALUES, "show": "all"}), **kwargs}
+
+def run_docstring_interactive_examples(**kwargs) -> None:
+    """Runs examples with a test Sprker instance and non-verbose by default."""
+
+    is_managed = False if "is_managed" not in kwargs else kwargs["is_managed"]
+    is_verbose = False if "is_verbose" not in kwargs else kwargs["is_verbose"]
+
     import doctest
 
-    print('Running docstring interactive examples...')
-    doctest.testmod(extraglobs={"S": Sprker({"_test": TEST_VALUES, "show": "all"})}, verbose=is_verbose)
+    if not is_managed:
+        print('Running docstring interactive examples...')
+    doctest.testmod(extraglobs=get_doctest_extraglobs(), verbose=is_verbose)
 
 
 # resource instances
@@ -1044,7 +1053,7 @@ def serve_public_local(resource, pars=[]):
     resource.tool.work["wait"].append(serve_public_localhost_8080)
 
 def test_source_code(resource, pars=[]):
-    run_docstring_interactive_examples(True)
+    run_docstring_interactive_examples(is_verbose=True)
 
 
 # 'combined' template instances
@@ -1367,6 +1376,9 @@ def main():
     )
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and 'SPRK_TEST_DOCS' == sys.argv[1]:
+        run_docstring_interactive_examples(is_managed=True)
+        sys.exit(0)
     main()
 
 
