@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v1.10.1
+# sprk v1.10.2
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -23,7 +23,7 @@ import shutil
 
 # for verification
 
-from typing import cast, Union, Callable, Any
+from typing import cast, Union, Optional, Callable, Any
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 
@@ -185,8 +185,8 @@ class Builder():
             self.show_messages([f"Error: content not read from file '{filename}'. {err}"], "err")
         return "" if content is None else content
 
-    def write_file(self, path: Union[str, Path] = None, content: str = "",
-            flag: str = "a", messages: dict = None) -> None:
+    def write_file(self, path: Optional[Union[str, Path]] = None, content: str = "",
+            flag: str = "a", messages: Optional[dict] = None) -> None:
         """
         Writes any content to a file, calling to create any filename needed.
         >>> with NamedTemporaryFile() as f:
@@ -297,7 +297,7 @@ class Builder():
         """
         return string.replace("\n", "\n" + " " * spaces)
 
-    def insert_content(self, current: str, content: str, anchor: dict = None,
+    def insert_content(self, current: str, content: str, anchor: Optional[dict] = None,
             delims: dict = {"opening": "", "closing": ""}, indent: int = 0, **kargs) -> str:
         """
         Returns content with additional lines combined, indented and inserted.
@@ -355,7 +355,7 @@ class Builder():
         return True
 
     def create_folder(self, dir: Path = CURRENT_DIR,
-            dirname: str = None, items: list = None) -> bool:
+            dirname: Optional[str] = None, items: Optional[list] = None) -> bool:
         """
         Creates a folder if not present, then calls to build any items.
         >>> with TemporaryDirectory() as d: # doctest: +ELLIPSIS
