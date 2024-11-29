@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# sprk v1.10.4
+# sprk v1.11.0
 # ©2021 barcek
 # License: MIT
 # @ github.com
@@ -30,10 +30,11 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 # base constants
 
 CURRENT_DIR = Path.cwd()
-SPRKFILENAME = "Sprkfile"
 
-PATH_TO_SELF = Path(sys.argv[0]).resolve()
+SPRKFILENAME = "Sprkfile"
 PATH_TO_SPRKFILE = CURRENT_DIR / SPRKFILENAME
+PATH_TO_SELF = Path(sys.argv[0]).resolve()
+NAME_OF_SELF = PATH_TO_SELF.name
 
 TOOLS: dict = {}
 TEST_VALUES: dict = {}
@@ -796,9 +797,9 @@ class Sprker(Runner):
             return {}
         try:
             shutil.copy(src, PATH_TO_SELF)
-            resource.tool.show_messages(["Updated sprk."])
+            resource.tool.show_messages([f"Updated {NAME_OF_SELF}."])
         except Exception as err:
-            resource.tool.show_messages([f"May not have updated sprk. {err}"], "err")
+            resource.tool.show_messages([f"May not have updated {NAME_OF_SELF}. {err}"], "err")
 
     @staticmethod
     def backup(resource, pars=[]):
@@ -813,9 +814,9 @@ class Sprker(Runner):
             return {}
         try:
             shutil.copy(PATH_TO_SELF, dest)
-            resource.tool.show_messages([f"Copied sprk to {dest}"])
+            resource.tool.show_messages([f"Copied {NAME_OF_SELF} to {dest}"])
         except Exception as err:
-            resource.tool.show_messages([f"May not have copied sprk to {dest}. {err}"], "err")
+            resource.tool.show_messages([f"May not have copied {NAME_OF_SELF} to {dest}. {err}"], "err")
 
 
 # verification of docstring interactive examples - optional:
@@ -861,7 +862,7 @@ def run_docstring_interactive_examples(**kwargs) -> None:
 
 BLANK = Resource({"info": "{BLANK}"})
 SPRKV = Resource({"info": "{SPRKV}"})
-USAGE = Resource({"info": "Usage: sprk [--option/-o [ARG ...] ...]"})
+USAGE = Resource({"info": f"Usage: {NAME_OF_SELF} [--option/-o [ARG ...] ...]"})
 USING = Resource({"info": "Using: {USING}"})
 
 SWITCH = {
@@ -872,14 +873,14 @@ SWITCH = {
     "args": ["[TOOL]"]
 }
 BACKUP = {
-    "desc": f"save sprk as/over a {SPRKFILENAME} here or in any DIR",
+    "desc": f"save {NAME_OF_SELF} as/over a {SPRKFILENAME} here or in any DIR",
     "word": "backup",
     "char": "B",
     "call": Sprker.backup,
     "args": ["[DIR]"]
 }
 UPDATE = {
-    "desc": f"replace sprk from a {SPRKFILENAME} here or in any DIR",
+    "desc": f"replace {NAME_OF_SELF} from a {SPRKFILENAME} here or in any DIR",
     "word": "update",
     "char": "U",
     "call": Sprker.update,
