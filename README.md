@@ -40,9 +40,11 @@ TOOLS["greeter"].provide_resources([
 ])
 ```
 
-The `USAGE` and `BLANK` entries in the list are instances of the Resource class, while `HELP` is a dictionary, as passed for `greet`. The `greet` dictionary's `call` property could of course be assigned a function defined elsewhere.
+The `USAGE` and `BLANK` entries in the list are instances of the Resource class used for features of the page, while `HELP` is a dictionary used to instantiate the `--help` option, as in the case of the `--greet` option above it. The dictionary's `call` property could of course be assigned not simply a lambda as here, but a function defined elsewhere in the code.
 
-For more detail on creation, see [Creating a tool](#creating-a-tool) below.
+For basic setup and some ready commands, see [Getting started](#getting-started) below.
+
+For more detail on creation, see [Creating a tool](#creating-a-tool).
 
 For more complex examples, see [The sample tools](#the-sample-tools).
 
@@ -85,7 +87,7 @@ For more complex examples, see [The sample tools](#the-sample-tools).
 
 ## Getting started
 
-Sprk 1.10.4 is written in Python 3.8.5.
+Sprk has been developed with Python versions ranging from 3.8.5 to 3.10.12. The source code should be compatible with versions 3.8.0 onwards.
 
 On a Linux system with a compatible version of Python installed, the source file can be run with the command `python3 sprk` while in the same directory, and from elsewhere using the pattern `python3 path/to/sprk`. With the same setup, it should be possible to run it from any directory with `sprk` alone by a) making it executable, if not already, with `chmod +x sprk` and b) placing it in a directory listed on the `$PATH` environment variable, e.g. '/bin' or '/usr/bin'.
 
